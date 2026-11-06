@@ -152,7 +152,7 @@ export async function generateCopilotResponse(
               contents,
               generationConfig: {
                 temperature: 0.55,
-                maxOutputTokens: 260,
+                maxOutputTokens: 800,
               },
             }),
           }
