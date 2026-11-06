@@ -15,10 +15,10 @@ import { TelemetryBadge, TelemetryStatus } from '../components/TelemetryBadge';
 import { ChatMessage } from '../components/ChatMessage';
 
 const QUICK_PROMPTS = [
-  '¿Por qué mi internet está lento?',
-  '¿Cuál es mi potencia óptica Rx actual?',
-  '¿El nodo de San Isidro tiene fallas?',
-  '¿Debo reiniciar mi módem?',
+  'Mi internet está un poco lento',
+  'Se corta mi videollamada',
+  '¿Hay algún problema en mi zona?',
+  '¿Debo reiniciar mi router?',
 ];
 
 export const SupportChatScreen: React.FC = () => {
@@ -48,80 +48,71 @@ export const SupportChatScreen: React.FC = () => {
     sendUserMessage(text);
   };
 
-  const rxStatus: TelemetryStatus =
-    telemetry.rxPowerDbm === null || telemetry.rxPowerDbm < -28
+  // Traducción de telemetría a lenguaje sencillo para el cliente
+  const fiberStatus: TelemetryStatus =
+    telemetry.rxPowerDbm === null || telemetry.rxPowerDbm < -30
       ? 'critical'
       : telemetry.rxPowerDbm < -24.5
       ? 'warning'
       : 'optimal';
 
-  const pingStatus: TelemetryStatus =
-    telemetry.pingMs > 180
+  const fiberText =
+    fiberStatus === 'critical'
+      ? 'Avería en calle'
+      : fiberStatus === 'warning'
+      ? 'Cable flojo'
+      : 'Estable';
+
+  const wifiStatus: TelemetryStatus =
+    telemetry.wifi5SaturationPct > 70 ? 'warning' : 'optimal';
+
+  const wifiText =
+    telemetry.wifi5SaturationPct > 70 ? 'Con interferencia' : 'Excelente';
+
+  const speedStatus: TelemetryStatus =
+    telemetry.downloadMbps === 0
       ? 'critical'
-      : telemetry.pingMs > 45
+      : telemetry.downloadMbps < 250
       ? 'warning'
       : 'optimal';
 
-  const wifiStatus: TelemetryStatus =
-    telemetry.wifi5SaturationPct > 75
-      ? 'warning'
-      : telemetry.wifi5SaturationPct > 90
-      ? 'critical'
-      : 'optimal';
+  const speedText =
+    telemetry.downloadMbps === 0
+      ? 'Sin conexión'
+      : telemetry.downloadMbps < 250
+      ? 'Reducida'
+      : 'Rápida';
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Mini Barra de Telemetría en Tiempo Real (Conectada a ONT) */}
+      {/* Resumen sencillo del estado de la conexión */}
       <View style={styles.liveTelemetryStrip}>
-        <View style={styles.stripHeaderRow}>
-          <View style={styles.liveIndicatorGroup}>
-            <View style={styles.pulsingDot} />
-            <Text style={styles.stripHeaderTitle}>
-              TELEMETRÍA ONT EN VIVO · {telemetry.nodeName.toUpperCase()}
-            </Text>
-          </View>
-          <Text style={styles.healthPillText}>
-            Salud: {telemetry.healthScore}%
-          </Text>
-        </View>
-
         <View style={styles.badgesRow}>
           <TelemetryBadge
             compact
-            label="Óptica Rx"
-            value={
-              telemetry.rxPowerDbm !== null
-                ? `${telemetry.rxPowerDbm.toFixed(1)} dBm`
-                : 'SIN SEÑAL'
-            }
-            subLabel="Normal: -18 a -24"
-            status={rxStatus}
+            label="Señal de calle"
+            value={fiberText}
+            status={fiberStatus}
           />
           <TelemetryBadge
             compact
-            label="Ping / Pérdida"
-            value={
-              telemetry.packetLossPct >= 100
-                ? 'OFFLINE'
-                : `${telemetry.pingMs} ms`
-            }
-            subLabel={`Pérdida: ${telemetry.packetLossPct}%`}
-            status={pingStatus}
-          />
-          <TelemetryBadge
-            compact
-            label="Wi-Fi 5 GHz"
-            value={`Canal ${telemetry.wifi5Channel}`}
-            subLabel={`Sat: ${telemetry.wifi5SaturationPct}% (${telemetry.connectedDevices} eq)`}
+            label="Wi-Fi en casa"
+            value={wifiText}
             status={wifiStatus}
+          />
+          <TelemetryBadge
+            compact
+            label="Velocidad"
+            value={speedText}
+            status={speedStatus}
           />
         </View>
       </View>
 
-      {/* Banner de Ejecución Remota en Tiempo Real (1.5s) */}
+      {/* Banner de acción en curso */}
       {isExecutingAction && (
         <View style={styles.executingBanner}>
           <ActivityIndicator size="small" color="#FFFFFF" />
@@ -129,7 +120,7 @@ export const SupportChatScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Historial de Conversación con el Copiloto Claro */}
+      {/* Conversación */}
       <ScrollView
         ref={scrollRef}
         style={styles.chatArea}
@@ -145,14 +136,14 @@ export const SupportChatScreen: React.FC = () => {
             <View style={styles.typingBubble}>
               <ActivityIndicator size="small" color="#DA291C" />
               <Text style={styles.typingText}>
-                Copiloto Claro está analizando la telemetría de tu router...
+                Revisando tu conexión...
               </Text>
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Sugerencias Rápidas de Consulta */}
+      {/* Preguntas rápidas sugeridas */}
       <View style={styles.quickPromptsBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {QUICK_PROMPTS.map((prompt, index) => (
@@ -168,13 +159,13 @@ export const SupportChatScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Caja de Entrada NLP */}
+      {/* Caja de texto */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Escribe tu consulta al Copiloto Claro..."
+          placeholder="Cuéntanos cómo va tu internet..."
           placeholderTextColor="#9CA3AF"
           onSubmitEditing={handleSend}
           returnKeyType="send"
@@ -203,40 +194,9 @@ const styles = StyleSheet.create({
   liveTelemetryStrip: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 10,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-  },
-  stripHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    marginBottom: 6,
-  },
-  liveIndicatorGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  pulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-    marginRight: 6,
-  },
-  stripHeaderTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#374151',
-    letterSpacing: 0.3,
-  },
-  healthPillText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#DA291C',
   },
   badgesRow: {
     flexDirection: 'row',
@@ -248,13 +208,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: '#10B981',
   },
   executingBannerText: {
     color: '#F9FAFB',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     marginLeft: 10,
     flex: 1,
   },
@@ -262,7 +220,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatContent: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingBottom: 18,
   },
   typingIndicatorRow: {
@@ -274,21 +232,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   typingText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#4B5563',
     marginLeft: 8,
-    fontWeight: '600',
   },
   quickPromptsBar: {
     backgroundColor: '#F9FAFB',
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
@@ -296,15 +253,15 @@ const styles = StyleSheet.create({
   quickPromptChip: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#E5E7EB',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     marginRight: 8,
   },
   quickPromptText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#374151',
   },
   inputContainer: {
@@ -312,32 +269,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   textInput: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 9,
-    fontSize: 13,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#1F2937',
     marginRight: 8,
   },
   sendButton: {
     backgroundColor: '#DA291C',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 22,
   },
   sendButtonDisabled: {
     backgroundColor: '#D1D5DB',
   },
   sendButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

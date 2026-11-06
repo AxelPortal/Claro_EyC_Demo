@@ -9,7 +9,6 @@ interface TelemetryBadgeProps {
   subLabel?: string;
   status: TelemetryStatus;
   compact?: boolean;
-  iconText?: string;
 }
 
 const STATUS_COLORS: Record<
@@ -22,7 +21,7 @@ const STATUS_COLORS: Record<
     badgeBg: '#DCFCE7',
     text: '#065F46',
     dot: '#10B981',
-    tagText: 'ÓPTIMO',
+    tagText: 'Bien',
   },
   warning: {
     bg: '#FFFBEB',
@@ -30,7 +29,7 @@ const STATUS_COLORS: Record<
     badgeBg: '#FEF3C7',
     text: '#92400E',
     dot: '#F59E0B',
-    tagText: 'CONGESTIÓN',
+    tagText: 'Por mejorar',
   },
   critical: {
     bg: '#FEF2F2',
@@ -38,7 +37,7 @@ const STATUS_COLORS: Record<
     badgeBg: '#FEE2E2',
     text: '#991B1B',
     dot: '#DA291C',
-    tagText: 'FALLA CRÍTICA',
+    tagText: 'Con avería',
   },
 };
 
@@ -48,7 +47,6 @@ export const TelemetryBadge: React.FC<TelemetryBadgeProps> = ({
   subLabel,
   status,
   compact = false,
-  iconText,
 }) => {
   const palette = STATUS_COLORS[status];
 
@@ -64,11 +62,6 @@ export const TelemetryBadge: React.FC<TelemetryBadgeProps> = ({
         <Text style={[styles.compactValue, { color: palette.text }]} numberOfLines={1}>
           {value}
         </Text>
-        {subLabel ? (
-          <Text style={styles.compactSubLabel} numberOfLines={1}>
-            {subLabel}
-          </Text>
-        ) : null}
       </View>
     );
   }
@@ -76,14 +69,7 @@ export const TelemetryBadge: React.FC<TelemetryBadgeProps> = ({
   return (
     <View style={[styles.card, { backgroundColor: '#FFFFFF', borderColor: palette.border }]}>
       <View style={styles.headerRow}>
-        <View style={styles.labelGroup}>
-          {iconText ? (
-            <View style={[styles.iconPill, { backgroundColor: palette.bg }]}>
-              <Text style={[styles.iconText, { color: palette.text }]}>{iconText}</Text>
-            </View>
-          ) : null}
-          <Text style={styles.cardLabel}>{label}</Text>
-        </View>
+        <Text style={styles.cardLabel}>{label}</Text>
         <View style={[styles.statusTag, { backgroundColor: palette.badgeBg }]}>
           <View style={[styles.statusDot, { backgroundColor: palette.dot }]} />
           <Text style={[styles.statusTagText, { color: palette.text }]}>{palette.tagText}</Text>
@@ -101,15 +87,10 @@ export const TelemetryBadge: React.FC<TelemetryBadgeProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1.5,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -117,34 +98,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  labelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 6,
-  },
-  iconPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginRight: 7,
-  },
-  iconText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
   cardLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#4B5563',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    color: '#6B7280',
   },
   statusTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   statusDot: {
@@ -154,28 +117,26 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   statusTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: '700',
   },
   mainValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     marginVertical: 2,
   },
   subLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
-    marginTop: 2,
-    lineHeight: 16,
+    marginTop: 4,
+    lineHeight: 18,
   },
   compactContainer: {
     flex: 1,
-    minWidth: 105,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 8,
     marginHorizontal: 3,
   },
   compactTopRow: {
@@ -184,18 +145,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   compactLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4B5563',
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   compactValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-  },
-  compactSubLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 1,
   },
 });

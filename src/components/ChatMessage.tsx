@@ -25,7 +25,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     return (
       <View style={styles.systemBubbleWrapper}>
         <View style={styles.systemBubble}>
-          <Text style={styles.systemText}>📡 {message.text}</Text>
+          <Text style={styles.systemText}>{message.text}</Text>
         </View>
       </View>
     );
@@ -67,10 +67,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     >
       {!isUser && (
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>IA</Text>
-          <View style={styles.verifiedCheck}>
-            <Text style={styles.verifiedCheckText}>✓</Text>
-          </View>
+          <Text style={styles.avatarText}>C</Text>
         </View>
       )}
 
@@ -81,21 +78,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         ]}
       >
         {!isUser && (
-          <View style={styles.copilotHeader}>
-            <Text style={styles.copilotName}>Copiloto Claro Perú</Text>
-            {message.phaseBadge ? (
-              <View style={styles.phaseBadge}>
-                <Text style={styles.phaseBadgeText}>{message.phaseBadge}</Text>
-              </View>
-            ) : null}
-          </View>
+          <Text style={styles.copilotName}>Asistente Claro</Text>
         )}
 
         <Text style={[styles.messageText, isUser ? styles.userText : styles.copilotText]}>
           {message.text}
         </Text>
 
-        {/* Tarjeta Interactiva Fase 3: Patchcord Guide */}
         {message.cardType === 'PATCHCORD_GUIDE' && (
           <PatchcordInlineDiagram
             rxPowerDbm={telemetry.rxPowerDbm}
@@ -103,7 +92,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           />
         )}
 
-        {/* Tarjeta de Comparación de Métricas Antes vs Después */}
         {message.cardType === 'METRICS_DIFF' && message.metricsDiff && (
           <View style={styles.metricsDiffCard}>
             <View style={styles.metricsDiffHeader}>
@@ -124,12 +112,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </View>
         )}
 
-        {/* Tarjeta Fase 4: Ticket Oficial de Avería OSIPTEL */}
         {message.cardType === 'TICKET_AVERIA' && message.ticketData && (
           <TicketAveriaCard ticket={message.ticketData} />
         )}
 
-        {/* Botón Primario de Acción / Consentimiento Explícito */}
         {message.actionButton && (
           <TouchableOpacity
             style={[
@@ -143,13 +129,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           >
             <Text style={styles.actionButtonText}>
               {message.actionButton.completed
-                ? `✓ ${message.actionButton.completedLabel || 'Acción ejecutada'}`
-                : `⚡ ${message.actionButton.label}`}
+                ? `✓ ${message.actionButton.completedLabel || 'Listo'}`
+                : message.actionButton.label}
             </Text>
           </TouchableOpacity>
         )}
 
-        {/* Botón Secundario (ej. Abrir modal de guía) */}
         {message.secondaryButton && (
           <TouchableOpacity
             style={styles.secondaryButton}
@@ -157,7 +142,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             activeOpacity={0.8}
           >
             <Text style={styles.secondaryButtonText}>
-              📋 {message.secondaryButton.label}
+              {message.secondaryButton.label}
             </Text>
           </TouchableOpacity>
         )}
@@ -165,7 +150,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         <View style={styles.timestampRow}>
           <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.copilotTimestamp]}>
             {message.timestamp}
-            {isUser ? '  ✓✓' : ''}
           </Text>
         </View>
       </View>
@@ -184,18 +168,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 999,
-    maxWidth: '94%',
+    maxWidth: '90%',
   },
   systemText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '600',
+    color: '#4B5563',
     textAlign: 'center',
   },
   messageRow: {
     flexDirection: 'row',
     marginVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     alignItems: 'flex-end',
   },
   userRow: {
@@ -205,52 +189,28 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#DA291C',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-    position: 'relative',
   },
   avatarText: {
     color: '#FFFFFF',
     fontWeight: '900',
-    fontSize: 12,
-  },
-  verifiedCheck: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  verifiedCheckText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '900',
+    fontSize: 14,
   },
   bubble: {
-    maxWidth: '85%',
-    borderRadius: 16,
+    maxWidth: '84%',
+    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
   },
   copilotBubble: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -258,29 +218,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#DA291C',
     borderBottomRightRadius: 4,
   },
-  copilotHeader: {
-    marginBottom: 6,
-  },
   copilotName: {
     fontSize: 12,
-    fontWeight: '900',
-    color: '#DA291C',
-    marginBottom: 3,
-  },
-  phaseBadge: {
-    backgroundColor: '#F3F4F6',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    borderLeftWidth: 2.5,
-    borderLeftColor: '#DA291C',
-  },
-  phaseBadgeText: {
-    fontSize: 9,
     fontWeight: '800',
-    color: '#374151',
-    letterSpacing: 0.3,
+    color: '#DA291C',
+    marginBottom: 4,
   },
   messageText: {
     fontSize: 14,
@@ -291,25 +233,24 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: '#FFFFFF',
-    fontWeight: '500',
   },
   metricsDiffCard: {
     backgroundColor: '#F0FDF4',
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#86EFAC',
-    padding: 11,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    padding: 12,
     marginTop: 10,
   },
   metricsDiffHeader: {
     borderBottomWidth: 1,
-    borderBottomColor: '#BBF7D0',
+    borderBottomColor: '#DCFCE7',
     paddingBottom: 6,
     marginBottom: 8,
   },
   metricsDiffTitle: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#065F46',
   },
   metricDiffRow: {
@@ -317,9 +258,8 @@ const styles = StyleSheet.create({
   },
   metricDiffLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 1,
+    fontWeight: '600',
+    color: '#4B5563',
   },
   metricDiffValues: {
     flexDirection: 'row',
@@ -327,37 +267,29 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   metricBefore: {
-    fontSize: 11,
-    color: '#DC2626',
+    fontSize: 12,
+    color: '#9CA3AF',
     textDecorationLine: 'line-through',
-    fontWeight: '600',
   },
   metricArrow: {
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '900',
   },
   metricAfter: {
     fontSize: 12,
     color: '#059669',
-    fontWeight: '900',
+    fontWeight: '800',
   },
   actionButton: {
     backgroundColor: '#DA291C',
     paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 10,
     alignItems: 'center',
-    shadowColor: '#DA291C',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   actionButtonCompleted: {
     backgroundColor: '#10B981',
-    shadowColor: '#10B981',
   },
   actionButtonDisabled: {
     opacity: 0.65,
@@ -370,8 +302,6 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 10,
@@ -379,13 +309,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#1F2937',
+    color: '#374151',
     fontSize: 12,
     fontWeight: '700',
   },
   timestampRow: {
     alignItems: 'flex-end',
-    marginTop: 5,
+    marginTop: 4,
   },
   timestamp: {
     fontSize: 10,

@@ -17,22 +17,16 @@ export const PatchcordInlineDiagram: React.FC<{
 
   return (
     <View style={styles.inlineCard}>
-      <View style={styles.inlineHeader}>
-        <Text style={styles.inlineHeaderTitle}>
-          DIAGRAMA FÍSICO: PUERTO VERDE PON + CABLE AMARILLO
-        </Text>
-      </View>
+      <Text style={styles.inlineHeaderTitle}>
+        Cómo revisar el cable amarillo detrás de tu router
+      </Text>
 
-      {/* Ilustración esquemática del Router ONT y el Patchcord Amarillo */}
       <View style={styles.diagramBox}>
         <View style={styles.diagramRow}>
-          {/* Roseta Óptica de Pared */}
           <View style={styles.rosetaBox}>
-            <Text style={styles.rosetaLabel}>ROSETA</Text>
-            <Text style={styles.rosetaSub}>PARED</Text>
+            <Text style={styles.rosetaLabel}>PARED</Text>
           </View>
 
-          {/* Cable Amarillo de Fibra Óptica (Patchcord) */}
           <View style={styles.cableTrack}>
             <View
               style={[
@@ -53,22 +47,21 @@ export const PatchcordInlineDiagram: React.FC<{
                 ]}
               >
                 {isOptimal
-                  ? '✓ Cable amarillo recto (-19.0 dBm)'
-                  : '⚠ Cable Amarillo (Patchcord): Evitar dobleces'}
+                  ? '✓ Cable amarillo bien colocado'
+                  : 'Cable amarillo: sin dobleces'}
               </Text>
             </View>
           </View>
 
-          {/* Conector SC/APC Verde + Puerto PON del Router */}
           <View style={styles.ontRearBox}>
-            <Text style={styles.ontRearTitle}>ROUTER ONT</Text>
+            <Text style={styles.ontRearTitle}>TU ROUTER</Text>
             <View style={styles.ponPortSocket}>
               <View style={styles.greenScConnector}>
-                <Text style={styles.ponPortText}>PON</Text>
+                <Text style={styles.ponPortText}>Entrada Verde</Text>
               </View>
             </View>
             <Text style={styles.clickBadge}>
-              {isOptimal ? '✓ CONECTADO' : 'Empujar hasta "CLIC"'}
+              {isOptimal ? '✓ Bien conectado' : 'Empujar hasta hacer clic'}
             </Text>
           </View>
         </View>
@@ -76,8 +69,7 @@ export const PatchcordInlineDiagram: React.FC<{
 
       <View style={styles.instructionStepBox}>
         <Text style={styles.instructionStepText}>
-          <Text style={styles.boldText}>Instrucción paso a paso: </Text>
-          "Verifica que el cable amarillo no tenga dobleces pronunciados y que el conector haga clic en el puerto verde PON".
+          Fíjate que el <Text style={styles.boldText}>cable amarillo</Text> no esté doblado ni aplastado por algún mueble y que su punta entre firme en la <Text style={styles.boldText}>entrada verde</Text>.
         </Text>
       </View>
 
@@ -88,7 +80,7 @@ export const PatchcordInlineDiagram: React.FC<{
           activeOpacity={0.8}
         >
           <Text style={styles.expandDiagramBtnText}>
-            🔍 Ampliar Guía Visual Paso a Paso
+            Ver guía paso a paso
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -104,10 +96,6 @@ export const PatchcordGuideModal: React.FC = () => {
     triggerVerifyPatchcord,
   } = useNetworkSimulation();
 
-  const rxText =
-    telemetry.rxPowerDbm !== null
-      ? `${telemetry.rxPowerDbm.toFixed(1)} dBm`
-      : 'SIN SEÑAL';
   const isHealthy =
     telemetry.rxPowerDbm !== null && telemetry.rxPowerDbm >= -24.5;
 
@@ -120,16 +108,10 @@ export const PatchcordGuideModal: React.FC = () => {
     >
       <View style={styles.modalBackdrop}>
         <View style={styles.modalContent}>
-          {/* Header */}
           <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalPhaseTag}>
-                FASE 3 · GUÍA DE HARDWARE ASISTIDA EN EL HOGAR
-              </Text>
-              <Text style={styles.modalTitle}>
-                Inspección del Patchcord de Fibra Óptica
-              </Text>
-            </View>
+            <Text style={styles.modalTitle}>
+              Revisión rápida del cable amarillo
+            </Text>
             <TouchableOpacity
               style={styles.closeBtn}
               onPress={() => setPatchcordModalOpen(false)}
@@ -139,52 +121,37 @@ export const PatchcordGuideModal: React.FC = () => {
           </View>
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {/* Medidor en vivo de Potencia Óptica */}
             <View
               style={[
                 styles.liveMeterCard,
                 {
-                  backgroundColor: isHealthy ? '#F0FDF4' : '#FEF2F2',
-                  borderColor: isHealthy ? '#86EFAC' : '#FCA5A5',
+                  backgroundColor: isHealthy ? '#F0FDF4' : '#FFFBEB',
+                  borderColor: isHealthy ? '#86EFAC' : '#FDE68A',
                 },
               ]}
             >
-              <View style={styles.liveMeterRow}>
-                <View>
-                  <Text style={styles.liveMeterLabel}>
-                    LECTURA LÁSER EN PUERTO PON (EN VIVO)
-                  </Text>
-                  <Text
-                    style={[
-                      styles.liveMeterValue,
-                      { color: isHealthy ? '#059669' : '#DA291C' },
-                    ]}
-                  >
-                    {rxText}
-                  </Text>
-                </View>
-                <View style={styles.rangeReferenceBox}>
-                  <Text style={styles.rangeRefText}>Óptimo: -18 a -24 dBm</Text>
-                  <Text style={styles.rangeRefCrit}>Falla: {'<'} -28 dBm</Text>
-                </View>
-              </View>
+              <Text style={styles.liveMeterLabel}>Estado actual del cable</Text>
+              <Text
+                style={[
+                  styles.liveMeterValue,
+                  { color: isHealthy ? '#059669' : '#B45309' },
+                ]}
+              >
+                {isHealthy ? 'Señal excelente y estable' : 'Señal débil (revisar cable)'}
+              </Text>
             </View>
 
-            {/* Diagrama Ilustrativo */}
             <PatchcordInlineDiagram rxPowerDbm={telemetry.rxPowerDbm} />
 
-            {/* 3 Pasos Guiados */}
             <View style={styles.stepsList}>
               <View style={styles.stepItem}>
                 <View style={styles.stepCircle}>
                   <Text style={styles.stepCircleText}>1</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>
-                    Ubica el cable amarillo (Patchcord SC/APC)
-                  </Text>
+                  <Text style={styles.stepTitle}>Ubica el cable amarillo</Text>
                   <Text style={styles.stepDesc}>
-                    Es el cable delgado amarillo que sale de la cajita blanca de la pared hacia la parte trasera de tu router Claro.
+                    Es el cable delgado amarillo que va desde la cajita blanca de la pared hacia la parte de atrás de tu router.
                   </Text>
                 </View>
               </View>
@@ -194,11 +161,9 @@ export const PatchcordGuideModal: React.FC = () => {
                   <Text style={styles.stepCircleText}>2</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>
-                    Elimina dobleces o aplastamientos
-                  </Text>
+                  <Text style={styles.stepTitle}>Estíralo con cuidado</Text>
                   <Text style={styles.stepDesc}>
-                    Por dentro viaja un haz de luz láser sobre vidrio. Si el cable amarillo está doblado en ángulo recto o presionado por un mueble, la luz se atenúa a -28.6 dBm.
+                    Asegúrate de que no esté doblado ni apretado detrás de algún mueble para que la señal pase bien.
                   </Text>
                 </View>
               </View>
@@ -208,18 +173,15 @@ export const PatchcordGuideModal: React.FC = () => {
                   <Text style={styles.stepCircleText}>3</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>
-                    Asegura el conector en el puerto verde PON
-                  </Text>
+                  <Text style={styles.stepTitle}>Ajusta la punta en la entrada verde</Text>
                   <Text style={styles.stepDesc}>
-                    Empuja suavemente la punta verde del cable en la entrada verde marcada como "PON" o "OPTICAL" hasta escuchar un clic firme. No retires el conector para proteger tus ojos del láser.
+                    Empuja suavemente el conector en la entrada verde detrás del router hasta escuchar un clic. No lo saques de su sitio.
                   </Text>
                 </View>
               </View>
             </View>
           </ScrollView>
 
-          {/* Footer Action */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
               style={styles.verifyPrimaryBtn}
@@ -227,7 +189,7 @@ export const PatchcordGuideModal: React.FC = () => {
               activeOpacity={0.85}
             >
               <Text style={styles.verifyPrimaryBtnText}>
-                ✓ Ya lo ajusté, verificar ahora en tiempo real
+                Ya lo acomodé, volver a revisar
               </Text>
             </TouchableOpacity>
           </View>
@@ -239,25 +201,18 @@ export const PatchcordGuideModal: React.FC = () => {
 
 const styles = StyleSheet.create({
   inlineCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#FCD34D',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     padding: 12,
     marginTop: 10,
   },
-  inlineHeader: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
   inlineHeaderTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#92400E',
-    letterSpacing: 0.3,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 8,
   },
   diagramBox: {
     backgroundColor: '#1F2937',
@@ -271,102 +226,89 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rosetaBox: {
-    width: 62,
-    height: 62,
+    width: 56,
+    height: 56,
     backgroundColor: '#F9FAFB',
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#9CA3AF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   rosetaLabel: {
-    fontSize: 9,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#1F2937',
-  },
-  rosetaSub: {
-    fontSize: 8,
-    color: '#6B7280',
-    fontWeight: '700',
   },
   cableTrack: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   yellowCableLine: {
     width: '100%',
-    height: 7,
+    height: 6,
     backgroundColor: '#FACC15',
-    borderRadius: 4,
+    borderRadius: 3,
     marginBottom: 8,
   },
   yellowCableBent: {
-    borderWidth: 1.5,
-    borderColor: '#EF4444',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
   },
   cableAlertTag: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   cableAlertText: {
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 10,
+    fontWeight: '700',
     textAlign: 'center',
   },
   ontRearBox: {
-    width: 92,
+    width: 96,
     backgroundColor: '#374151',
     borderRadius: 8,
     padding: 6,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#6B7280',
   },
   ontRearTitle: {
     color: '#E5E7EB',
-    fontSize: 8,
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '700',
     marginBottom: 4,
   },
   ponPortSocket: {
     backgroundColor: '#064E3B',
-    padding: 4,
+    padding: 3,
     borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#10B981',
     marginBottom: 4,
   },
   greenScConnector: {
     backgroundColor: '#10B981',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   ponPortText: {
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: 9,
+    fontWeight: '800',
   },
   clickBadge: {
     color: '#FDE047',
-    fontSize: 8,
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '700',
     textAlign: 'center',
   },
   instructionStepBox: {
     backgroundColor: '#FFFBEB',
-    padding: 9,
+    padding: 10,
     borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F59E0B',
   },
   instructionStepText: {
     fontSize: 12,
-    color: '#1F2937',
+    color: '#374151',
     lineHeight: 17,
   },
   boldText: {
@@ -375,45 +317,38 @@ const styles = StyleSheet.create({
   },
   expandDiagramBtn: {
     marginTop: 8,
-    paddingVertical: 7,
+    paddingVertical: 8,
     backgroundColor: '#F3F4F6',
     borderRadius: 8,
     alignItems: 'center',
   },
   expandDiagramBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1F2937',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(17, 24, 39, 0.72)',
+    backgroundColor: 'rgba(17, 24, 39, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalContent: {
     width: '100%',
-    maxWidth: 480,
-    maxHeight: '90%',
+    maxWidth: 460,
+    maxHeight: '88%',
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     overflow: 'hidden',
   },
   modalHeader: {
-    backgroundColor: '#1F2937',
+    backgroundColor: '#DA291C',
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  modalPhaseTag: {
-    color: '#FBBF24',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    marginBottom: 2,
   },
   modalTitle: {
     color: '#FFFFFF',
@@ -421,10 +356,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#374151',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -439,35 +374,17 @@ const styles = StyleSheet.create({
   liveMeterCard: {
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
-  },
-  liveMeterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderWidth: 1,
+    marginBottom: 4,
   },
   liveMeterLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#4B5563',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   liveMeterValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  rangeReferenceBox: {
-    alignItems: 'flex-end',
-  },
-  rangeRefText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#065F46',
-  },
-  rangeRefCrit: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#991B1B',
+    fontSize: 16,
+    fontWeight: '800',
     marginTop: 2,
   },
   stepsList: {
@@ -480,9 +397,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   stepCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#DA291C',
     alignItems: 'center',
     justifyContent: 'center',
@@ -491,7 +408,7 @@ const styles = StyleSheet.create({
   },
   stepCircleText: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '800',
     fontSize: 12,
   },
   stepContent: {

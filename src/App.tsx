@@ -10,7 +10,6 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import {
   NetworkSimulationProvider,
-  ScenarioId,
   useNetworkSimulation,
 } from './context/NetworkSimulationContext';
 import { SupportChatScreen } from './screens/SupportChatScreen';
@@ -22,85 +21,50 @@ type TabKey = 'chat' | 'dashboard';
 
 const MainShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
-  const {
-    activeScenario,
-    selectScenario,
-    setDemoDrawerOpen,
-    telemetry,
-  } = useNetworkSimulation();
-
-  const scenarios: Array<{ id: ScenarioId; shortLabel: string }> = [
-    { id: 'A', shortLabel: 'A: Wi-Fi (F1/2)' },
-    { id: 'B', shortLabel: 'B: Cable (F3)' },
-    { id: 'C', shortLabel: 'C: Corte (F4)' },
-    { id: 'D', shortLabel: 'D: Óptimo' },
-  ];
+  const { setDemoDrawerOpen, telemetry } = useNetworkSimulation();
 
   return (
     <SafeAreaView style={styles.outerBackground}>
       <StatusBar style="light" />
       <View style={styles.appWrapper}>
-        {/* Top Corporate Header Claro Perú + Botón de Modo Demostración */}
+        {/* Cabecera limpia estilo App Mi Claro */}
         <View style={styles.header}>
           <View style={styles.brandRow}>
             <View style={styles.claroCircle}>
               <Text style={styles.claroCircleText}>Claro</Text>
             </View>
             <View style={styles.headerTitleCol}>
-              <View style={styles.titleWithVerified}>
-                <Text style={styles.headerTitle}>Copiloto Claro IA</Text>
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedBadgeText}>✓ ONT Live</Text>
-                </View>
-              </View>
+              <Text style={styles.headerTitle}>Soporte Mi Claro</Text>
               <Text style={styles.headerSub} numberOfLines={1}>
-                Titular: Axel Portal · FTTH 600 Mbps
+                Hogar · San Isidro
               </Text>
             </View>
           </View>
 
-          {/* Botón Esquina Superior para Evaluador ("Modo Demostración") */}
+          {/* Acceso discreto para cambiar el estado de la red */}
           <TouchableOpacity
-            style={styles.demoModeBtn}
+            style={styles.statusMenuBtn}
             onPress={() => setDemoDrawerOpen(true)}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
-            <Text style={styles.demoModeBtnLabel}>⚙️ Modo Demo</Text>
-            <Text style={styles.demoModeBtnSub}>Escenario {activeScenario}</Text>
+            <View
+              style={[
+                styles.statusDot,
+                {
+                  backgroundColor:
+                    telemetry.healthScore >= 85
+                      ? '#10B981'
+                      : telemetry.scenarioId === 'C'
+                      ? '#FCA5A5'
+                      : '#FBBF24',
+                },
+              ]}
+            />
+            <Text style={styles.statusMenuBtnText}>Estado de red ▾</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Barra Rápida de Escenarios para Evaluación Ágil */}
-        <View style={styles.quickScenarioBar}>
-          <Text style={styles.quickScenarioTitle}>Simular:</Text>
-          <View style={styles.quickScenarioButtons}>
-            {scenarios.map((sc) => {
-              const selected = activeScenario === sc.id;
-              return (
-                <TouchableOpacity
-                  key={sc.id}
-                  style={[
-                    styles.scenarioChip,
-                    selected && styles.scenarioChipActive,
-                  ]}
-                  onPress={() => selectScenario(sc.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.scenarioChipText,
-                      selected && styles.scenarioChipTextActive,
-                    ]}
-                  >
-                    {sc.shortLabel}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Contenido Principal (Pantalla Activa) */}
+        {/* Pantalla activa */}
         <View style={styles.screenContainer}>
           {activeTab === 'chat' ? (
             <SupportChatScreen />
@@ -109,7 +73,7 @@ const MainShell: React.FC = () => {
           )}
         </View>
 
-        {/* Navegación por Tabs Inferior */}
+        {/* Barra de navegación inferior */}
         <View style={styles.bottomTabBar}>
           <TouchableOpacity
             style={[
@@ -121,13 +85,12 @@ const MainShell: React.FC = () => {
           >
             <Text
               style={[
-                styles.tabIcon,
+                styles.tabLabel,
                 activeTab === 'chat' && styles.tabTextActive,
               ]}
             >
-              💬 Copiloto IA (Soporte)
+              💬 Asistente
             </Text>
-            <Text style={styles.tabSub}>Fases 2, 3 y 4 · NLP</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -141,11 +104,11 @@ const MainShell: React.FC = () => {
             <View style={styles.tabTitleRow}>
               <Text
                 style={[
-                  styles.tabIcon,
+                  styles.tabLabel,
                   activeTab === 'dashboard' && styles.tabTextActive,
                 ]}
               >
-                📊 Telemetría ONT
+                📶 Mi Conexión
               </Text>
               <View
                 style={[
@@ -161,13 +124,9 @@ const MainShell: React.FC = () => {
                 ]}
               />
             </View>
-            <Text style={styles.tabSub}>
-              Fase 1 · Salud {telemetry.healthScore}%
-            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Modales Globales */}
         <PatchcordGuideModal />
         <DemoScenarioDrawer />
       </View>
@@ -193,7 +152,7 @@ const styles = StyleSheet.create({
   appWrapper: {
     flex: 1,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 520 : '100%',
+    maxWidth: Platform.OS === 'web' ? 480 : '100%',
     backgroundColor: '#F3F4F6',
     overflow: 'hidden',
     ...(Platform.OS === 'web'
@@ -206,9 +165,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#DA291C',
-    paddingHorizontal: 14,
-    paddingTop: Platform.OS === 'android' ? 36 : 12,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 36 : 14,
+    paddingBottom: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -220,9 +179,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   claroCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -237,92 +196,34 @@ const styles = StyleSheet.create({
   headerTitleCol: {
     flex: 1,
   },
-  titleWithVerified: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
   headerTitle: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '900',
-    marginRight: 6,
-  },
-  verifiedBadge: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  verifiedBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   headerSub: {
     color: '#FEE2E2',
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  demoModeBtn: {
-    backgroundColor: '#1F2937',
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FBBF24',
-  },
-  demoModeBtnLabel: {
-    color: '#FBBF24',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  demoModeBtnSub: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: 12,
     marginTop: 1,
   },
-  quickScenarioBar: {
-    backgroundColor: '#1F2937',
-    paddingHorizontal: 10,
+  statusMenuBtn: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingHorizontal: 12,
     paddingVertical: 7,
+    borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  quickScenarioTitle: {
-    color: '#9CA3AF',
-    fontSize: 10,
-    fontWeight: '800',
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 6,
-    textTransform: 'uppercase',
   },
-  quickScenarioButtons: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  scenarioChip: {
-    flex: 1,
-    backgroundColor: '#374151',
-    paddingVertical: 5,
-    paddingHorizontal: 4,
-    borderRadius: 6,
-    marginHorizontal: 2,
-    alignItems: 'center',
-  },
-  scenarioChipActive: {
-    backgroundColor: '#DA291C',
-  },
-  scenarioChipText: {
-    color: '#D1D5DB',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  scenarioChipTextActive: {
+  statusMenuBtnText: {
     color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   screenContainer: {
     flex: 1,
@@ -333,38 +234,31 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 12,
     marginHorizontal: 4,
   },
   tabItemActive: {
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
   },
   tabTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tabIcon: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#4B5563',
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
   },
   tabTextActive: {
     color: '#DA291C',
-  },
-  tabSub: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 1,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   healthMiniDot: {
     width: 8,

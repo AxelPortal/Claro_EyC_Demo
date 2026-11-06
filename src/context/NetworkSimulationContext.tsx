@@ -1,11 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
   TelemetrySnapshot,
   ChatHistoryItem,
   generateCopilotResponse,
-  isGeminiConfigured,
-  getActiveGeminiApiKey,
-  setRuntimeGeminiApiKey,
 } from '../services/geminiService';
 
 export type ScenarioId = 'A' | 'B' | 'C' | 'D';
@@ -17,13 +14,10 @@ export interface TicketAveriaData {
   clientName: string;
   serviceAddress: string;
   planName: string;
-  ontModel: string;
-  rxPowerRecorded: string;
-  nodeAffected: string;
-  estimatedVisitWindow: string;
-  technicianCrew: string;
-  automatedDiscards: string[];
-  fieldSummary: string;
+  issueSummary: string;
+  estimatedResolution: string;
+  customerActionNote: string;
+   checksPerformed: string[];
 }
 
 export interface ChatMessageItem {
@@ -31,7 +25,6 @@ export interface ChatMessageItem {
   sender: 'copilot' | 'user' | 'system';
   timestamp: string;
   text: string;
-  phaseBadge?: string;
   usedGemini?: boolean;
   actionButton?: {
     label: string;
@@ -58,7 +51,7 @@ export interface ChatMessageItem {
 export interface DiagnosticLogEntry {
   id: string;
   time: string;
-  phase: string;
+  title: string;
   detail: string;
   status: 'ok' | 'warning' | 'critical';
 }
@@ -73,22 +66,19 @@ interface NetworkSimulationContextValue {
   isTyping: boolean;
   isPatchcordModalOpen: boolean;
   isDemoDrawerOpen: boolean;
-  geminiConnected: boolean;
-  customApiKey: string;
   selectScenario: (scenario: ScenarioId) => void;
   sendUserMessage: (text: string) => Promise<void>;
   triggerOptimizeWifi: (messageId?: string) => void;
   triggerVerifyPatchcord: (messageId?: string) => void;
   setPatchcordModalOpen: (open: boolean) => void;
   setDemoDrawerOpen: (open: boolean) => void;
-  updateCustomApiKey: (key: string) => void;
   runQuickTelemetryScan: () => void;
 }
 
 const SCENARIO_PRESETS: Record<ScenarioId, TelemetrySnapshot> = {
   A: {
     scenarioId: 'A',
-    scenarioName: 'Escenario A: Congestión Wi-Fi (Fase 1 y 2)',
+    scenarioName: 'Interferencia en señal Wi-Fi',
     phase: 2,
     rxPowerDbm: -19.4,
     txPowerDbm: 2.3,
@@ -100,18 +90,18 @@ const SCENARIO_PRESETS: Record<ScenarioId, TelemetrySnapshot> = {
     wifi5Channel: 36,
     wifi5SaturationPct: 92,
     connectedDevices: 11,
-    nodeName: 'Nodo San Isidro - Sector 4',
+    nodeName: 'San Isidro',
     nodeStatus: 'NORMAL',
-    ontModel: 'Huawei OptiXstar HG8145X6 (Wi-Fi 6)',
+    ontModel: 'Router Wi-Fi Claro Hogar',
     ponStatus: 'ONLINE',
-    healthScore: 54,
-    downloadMbps: 168,
+    healthScore: 60,
+    downloadMbps: 170,
     uploadMbps: 110,
     contractedMbps: 600,
   },
   B: {
     scenarioId: 'B',
-    scenarioName: 'Escenario B: Cable Patchcord Flojo (Fase 3)',
+    scenarioName: 'Cable amarillo flojo o doblado',
     phase: 3,
     rxPowerDbm: -28.6,
     txPowerDbm: 2.1,
@@ -123,18 +113,18 @@ const SCENARIO_PRESETS: Record<ScenarioId, TelemetrySnapshot> = {
     wifi5Channel: 149,
     wifi5SaturationPct: 16,
     connectedDevices: 9,
-    nodeName: 'Nodo San Isidro - Sector 4',
+    nodeName: 'San Isidro',
     nodeStatus: 'NORMAL',
-    ontModel: 'Huawei OptiXstar HG8145X6 (Wi-Fi 6)',
+    ontModel: 'Router Wi-Fi Claro Hogar',
     ponStatus: 'ATENUACION_CRITICA',
-    healthScore: 38,
-    downloadMbps: 64,
+    healthScore: 40,
+    downloadMbps: 65,
     uploadMbps: 35,
     contractedMbps: 600,
   },
   C: {
     scenarioId: 'C',
-    scenarioName: 'Escenario C: Corte Externo de Fibra (Fase 4)',
+    scenarioName: 'Avería externa en tu zona',
     phase: 4,
     rxPowerDbm: -31.5,
     txPowerDbm: 0.0,
@@ -146,18 +136,18 @@ const SCENARIO_PRESETS: Record<ScenarioId, TelemetrySnapshot> = {
     wifi5Channel: 149,
     wifi5SaturationPct: 14,
     connectedDevices: 9,
-    nodeName: 'Nodo San Isidro - Av. Javier Prado Oeste',
+    nodeName: 'San Isidro',
     nodeStatus: 'AVERIA_EXTERNA',
-    ontModel: 'Huawei OptiXstar HG8145X6 (Wi-Fi 6)',
+    ontModel: 'Router Wi-Fi Claro Hogar',
     ponStatus: 'LOS_SIN_SENAL',
-    healthScore: 12,
+    healthScore: 15,
     downloadMbps: 0,
     uploadMbps: 0,
     contractedMbps: 600,
   },
   D: {
     scenarioId: 'D',
-    scenarioName: 'Escenario D: Estado Óptimo (100% Salud)',
+    scenarioName: 'Todo funcionando excelente',
     phase: 1,
     rxPowerDbm: -18.9,
     txPowerDbm: 2.4,
@@ -169,37 +159,33 @@ const SCENARIO_PRESETS: Record<ScenarioId, TelemetrySnapshot> = {
     wifi5Channel: 149,
     wifi5SaturationPct: 11,
     connectedDevices: 9,
-    nodeName: 'Nodo San Isidro - Sector 4',
+    nodeName: 'San Isidro',
     nodeStatus: 'NORMAL',
-    ontModel: 'Huawei OptiXstar HG8145X6 (Wi-Fi 6)',
+    ontModel: 'Router Wi-Fi Claro Hogar',
     ponStatus: 'ONLINE',
     healthScore: 100,
-    downloadMbps: 624,
-    uploadMbps: 608,
+    downloadMbps: 600,
+    uploadMbps: 600,
     contractedMbps: 600,
   },
 };
 
 const DEFAULT_TICKET_AVERIA: TicketAveriaData = {
   ticketCode: 'CLARO-AV-2026-9814',
-  osiptelCode: 'OSIPTEL-SAR-2026-0049182',
-  createdAt: 'Hoy, 19:38 hrs',
+  osiptelCode: 'Constancia Oficial OSIPTEL',
+  createdAt: 'Hoy',
   clientName: 'Axel Portal',
-  serviceAddress: 'Av. Dos de Mayo 1420, Dpto. 502 - San Isidro, Lima',
-  planName: 'Claro Hogar Fibra Óptica FTTH 600 Mbps',
-  ontModel: 'Huawei OptiXstar HG8145X6 (SN: HWTC9A8421B)',
-  rxPowerRecorded: '-31.5 dBm - Falla de Línea Externa (Alarma LOS)',
-  nodeAffected: 'Nodo San Isidro - Caja NAP Poste #402 (Splitter 1:16)',
-  estimatedVisitWindow: 'Hoy, 20:30 - 22:00 hrs (Prioridad Alta SLA < 3h)',
-  technicianCrew: 'Cuadrilla Planta Externa #14 - Ing. Carlos Mendoza',
-  automatedDiscards: [
-    'Energía eléctrica de ONT verificada (Fuente 12V OK, Uptime 14 días)',
-    'Configuración de canales Wi-Fi 2.4/5 GHz sin conflicto interno',
-    'Prueba reflectométrica remota: caída abrupta de luz a 280m del domicilio',
-    'Validación cruzada: 6 vecinos del mismo Splitter NAP #402 con caída simultánea',
+  serviceAddress: 'San Isidro, Lima',
+  planName: 'Claro Hogar Fibra 600 Mbps',
+  issueSummary: 'Corte en el cableado exterior de tu cuadra',
+  estimatedResolution: 'Hoy entre 4:30 p.m. y 6:00 p.m.',
+  checksPerformed: [
+    'Tu router en casa encendió y funciona correctamente',
+    'El problema fue ubicado afuera, en el poste de tu cuadra',
+    'Un equipo técnico de Claro ya fue asignado a tu zona',
   ],
-  fieldSummary:
-    'Descarte automático completado por Copiloto Claro IA vía telemetría OMCI. Falla física externa confirmada fuera del hogar del cliente. NO obligar al cliente a reiniciar el módem ni ingresar al domicilio salvo solicitud del titular.',
+  customerActionNote:
+    'No necesitas llamar al 123 ni reiniciar tu módem. Te avisaremos por aquí apenas el servicio quede restablecido.',
 };
 
 function getNowTimeStr(): string {
@@ -214,19 +200,12 @@ function buildInitialMessagesForScenario(scenario: ScenarioId): ChatMessageItem[
   if (scenario === 'A') {
     return [
       {
-        id: 'sys-a-1',
-        sender: 'system',
-        timestamp: time,
-        text: 'Telemetría ONT sincronizada: Monitoreo Predictivo Fase 1 activo (Módem Huawei HG8145X6).',
-      },
-      {
         id: 'cop-a-1',
         sender: 'copilot',
         timestamp: time,
-        phaseBadge: 'FASE 1 & 2 · DETECCIÓN Y CONSENTIMIENTO NLP',
-        text: 'Hola Axel, detecté microcortes en tu red de 5 GHz debido a congestión de canales con redes vecinas (el Canal 36 está al 92% de saturación y tu latencia subió a 142 ms). Tu fibra óptica externa llega perfecta (-19.4 dBm). ¿Me autorizas a optimizar tu canal Wi-Fi ahora mismo sin cortar tu conexión?',
+        text: 'Hola Axel 👋 Noté que tu internet está un poco lento hoy. Revisé tu conexión y la señal llega muy bien desde la calle, pero el Wi-Fi de las casas vecinas está causando interferencia con el tuyo. ¿Quieres que pase tu Wi-Fi a una señal libre ahora mismo? No se cortará tu internet.',
         actionButton: {
-          label: '¿Deseas que optimice tu canal Wi-Fi ahora?',
+          label: 'Sí, mejorar mi Wi-Fi ahora',
           actionType: 'OPTIMIZE_WIFI',
           completed: false,
         },
@@ -237,25 +216,18 @@ function buildInitialMessagesForScenario(scenario: ScenarioId): ChatMessageItem[
   if (scenario === 'B') {
     return [
       {
-        id: 'sys-b-1',
-        sender: 'system',
-        timestamp: time,
-        text: 'Alerta de Telemetría Óptica (OMCI): Atenuación anormal detectada en puerto PON (-28.6 dBm).',
-      },
-      {
         id: 'cop-b-1',
         sender: 'copilot',
         timestamp: time,
-        phaseBadge: 'FASE 3 · ESCENARIO FÍSICO ASISTIDO EN EL HOGAR',
-        text: 'Hola Axel, mi diagnóstico en tiempo real muestra que el Nodo San Isidro está normal, pero la luz láser que llega a tu router cayó a -28.6 dBm (pérdida de paquetes del 8.5%). Esto ocurre cuando el cable amarillo de fibra óptica (Patchcord) se dobla o se afloja ligeramente.',
+        text: 'Hola Axel 👋 Revisé tu conexión porque noté interrupciones en tu internet. En tu zona todo está bien, pero la señal que entra por el cable amarillo detrás de tu router llega débil. Esto suele pasar cuando ese cable se dobla o se afloja un poquito.',
         cardType: 'PATCHCORD_GUIDE',
         actionButton: {
-          label: 'Ya lo ajusté, verificar ahora',
+          label: 'Ya lo acomodé, volver a revisar',
           actionType: 'VERIFY_PATCHCORD',
           completed: false,
         },
         secondaryButton: {
-          label: 'Ver guía interactiva detallada',
+          label: 'Ver cómo revisarlo paso a paso',
           actionType: 'OPEN_PATCHCORD_MODAL',
         },
       },
@@ -265,39 +237,24 @@ function buildInitialMessagesForScenario(scenario: ScenarioId): ChatMessageItem[
   if (scenario === 'C') {
     return [
       {
-        id: 'sys-c-1',
-        sender: 'system',
-        timestamp: time,
-        text: 'Alarma Crítica LOS (Loss of Signal): Potencia óptica -31.5 dBm. Ejecutando descartes automáticos sin intervención humana...',
-      },
-      {
         id: 'cop-c-1',
         sender: 'copilot',
         timestamp: time,
-        phaseBadge: 'FASE 4 · DERIVACIÓN INTELIGENTE & TICKET OSIPTEL',
-        text: 'Hola Axel. Detecté una interrupción en tu servicio y ya realicé todos los descartes técnicos automáticamente: tu router funciona bien, pero hay una rotura de fibra externa en la Caja NAP de tu cuadra (-31.5 dBm). No necesitas llamar al 123 ni reiniciar tu módem; ya emití tu Código Oficial de Avería respaldado por OSIPTEL y asigné una cuadrilla técnica.',
+        text: 'Hola Axel. Detectamos una avería en el cableado de la calle en tu zona de San Isidro. Tu router en casa está bien, así que no necesitas reiniciarlo ni llamar por teléfono. Ya registramos tu ticket oficial de atención y nuestro equipo técnico está en camino para resolverlo.',
         cardType: 'TICKET_AVERIA',
         ticketData: DEFAULT_TICKET_AVERIA,
       },
     ];
   }
 
-  // Escenario D: Estado Óptimo
   return [
-    {
-      id: 'sys-d-1',
-      sender: 'system',
-      timestamp: time,
-      text: 'Telemetría en tiempo real: Salud de red al 100% · Certificación FTTH Claro Perú.',
-    },
     {
       id: 'cop-d-1',
       sender: 'copilot',
       timestamp: time,
-      phaseBadge: 'FASE 1 · MONITOREO PREDICTIVO ACTIVO',
-      text: '¡Hola Axel! Soy tu Copiloto Claro conectado a la telemetría de tu router Huawei Wi-Fi 6. Tu fibra óptica opera en rango ideal (-18.9 dBm), tu latencia es de apenas 7 ms y estás recibiendo 624 Mbps estables en el canal limpio 149. ¿En qué puedo ayudarte hoy?',
+      text: '¡Hola Axel! 👋 Tu internet en casa está funcionando excelente hoy y todos tus equipos navegan a máxima velocidad. ¿En qué te puedo ayudar?',
       actionButton: {
-        label: 'Ejecutar test preventivo en vivo',
+        label: 'Revisar mi conexión ahora',
         actionType: 'RUN_DIAGNOSTIC',
         completed: false,
       },
@@ -312,22 +269,15 @@ function buildInitialLogsForScenario(scenario: ScenarioId): DiagnosticLogEntry[]
       {
         id: 'log-a-1',
         time,
-        phase: 'Fase 1 · ML Predictivo',
-        detail: 'Potencia óptica Rx validada en -19.4 dBm (Óptimo). Nodo San Isidro sin incidencias.',
+        title: 'Señal exterior en buen estado',
+        detail: 'El servicio llega sin problemas desde la calle hasta tu hogar.',
         status: 'ok',
       },
       {
         id: 'log-a-2',
         time,
-        phase: 'Fase 1 · Espectro RF',
-        detail: 'Detectada colisión co-canal en 5 GHz (Canal 36 al 92% de ocupación por 7 BSSIDs vecinos).',
-        status: 'warning',
-      },
-      {
-        id: 'log-a-3',
-        time,
-        phase: 'Fase 2 · Copiloto NLP',
-        detail: 'Solicitud de consentimiento enviada al usuario para migración en caliente al Canal 149.',
+        title: 'Interferencia en el Wi-Fi de casa',
+        detail: 'Hay varias redes vecinas saturando la señal de tu router.',
         status: 'warning',
       },
     ];
@@ -337,22 +287,15 @@ function buildInitialLogsForScenario(scenario: ScenarioId): DiagnosticLogEntry[]
       {
         id: 'log-b-1',
         time,
-        phase: 'Fase 1 · Telemetría PON',
-        detail: 'Caída de potencia óptica Rx detectada: de -19.1 dBm a -28.6 dBm (Umbral de falla < -28.0 dBm).',
-        status: 'critical',
+        title: 'Señal de la calle sin problemas',
+        detail: 'No hay cortes ni fallas reportadas en tu cuadra.',
+        status: 'ok',
       },
       {
         id: 'log-b-2',
         time,
-        phase: 'Fase 1 · Correlación',
-        detail: 'Vecinos en Caja NAP #402 reportan -19.0 dBm normal. Falla aislada dentro del domicilio.',
-        status: 'warning',
-      },
-      {
-        id: 'log-b-3',
-        time,
-        phase: 'Fase 3 · Guía Física',
-        detail: 'Tarjeta interactiva de inspección de Patchcord SC/APC desplegada al cliente.',
+        title: 'Cable amarillo con señal débil',
+        detail: 'Revisa que el cable amarillo detrás del router no esté doblado ni suelto.',
         status: 'warning',
       },
     ];
@@ -362,22 +305,15 @@ function buildInitialLogsForScenario(scenario: ScenarioId): DiagnosticLogEntry[]
       {
         id: 'log-c-1',
         time,
-        phase: 'Fase 1 · Alarma LOS',
-        detail: 'Pérdida de señal óptica Rx: -31.5 dBm en ONT Huawei HG8145X6.',
+        title: 'Avería detectada en tu cuadra',
+        detail: 'Se identificó un corte externo en tu zona de San Isidro.',
         status: 'critical',
       },
       {
         id: 'log-c-2',
         time,
-        phase: 'Fase 4 · Descarte Automático',
-        detail: 'Correlación masiva: 6 hogares en Caja NAP Poste #402 sin señal óptica simultáneamente.',
-        status: 'critical',
-      },
-      {
-        id: 'log-c-3',
-        time,
-        phase: 'Fase 4 · Handoff OSIPTEL',
-        detail: 'Emitido Ticket Oficial CLARO-AV-2026-9814 y asignada Cuadrilla Planta Externa #14.',
+        title: 'Atención técnica activada',
+        detail: 'Código CLARO-AV-2026-9814 generado automáticamente sin llamada.',
         status: 'ok',
       },
     ];
@@ -386,15 +322,8 @@ function buildInitialLogsForScenario(scenario: ScenarioId): DiagnosticLogEntry[]
     {
       id: 'log-d-1',
       time,
-      phase: 'Fase 1 · Telemetría Continua',
-      detail: 'Potencia Rx -18.9 dBm | Ping 7 ms | Pérdida 0.0% | Velocidad 624 Mbps.',
-      status: 'ok',
-    },
-    {
-      id: 'log-d-2',
-      time,
-      phase: 'Fase 1 · Espectro Wi-Fi 6',
-      detail: 'Canal 149 (5 GHz) operando al 11% de carga sin interferencias.',
+      title: 'Conexión estable y rápida',
+      detail: 'Tanto la fibra como tu Wi-Fi funcionan sin inconvenientes.',
       status: 'ok',
     },
   ];
@@ -420,18 +349,6 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
   const [isTyping, setIsTyping] = useState(false);
   const [isPatchcordModalOpen, setPatchcordModalOpen] = useState(false);
   const [isDemoDrawerOpen, setDemoDrawerOpen] = useState(false);
-  const [customApiKey, setCustomApiKey] = useState<string>(() => getActiveGeminiApiKey());
-  const [geminiConnected, setGeminiConnected] = useState<boolean>(() => isGeminiConfigured());
-
-  useEffect(() => {
-    setGeminiConnected(isGeminiConfigured());
-  }, [customApiKey]);
-
-  const updateCustomApiKey = useCallback((key: string) => {
-    setRuntimeGeminiApiKey(key);
-    setCustomApiKey(key);
-    setGeminiConnected(isGeminiConfigured());
-  }, []);
 
   const selectScenario = useCallback((scenario: ScenarioId) => {
     setIsExecutingAction(false);
@@ -445,35 +362,31 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
   const triggerOptimizeWifi = useCallback((messageId?: string) => {
     setIsExecutingAction(true);
-    setExecutingActionText(
-      'Ejecutando comando TR-069 en ONT: Migrando red 5 GHz de Canal 36 (92%) a Canal 149 DFS Libre...'
-    );
+    setExecutingActionText('Mejorando la señal de tu Wi-Fi automáticamente...');
 
     setTimeout(() => {
       const time = getNowTimeStr();
 
       setTelemetry((prev) => ({
         ...prev,
-        phase: 2,
         pingMs: 8,
         jitterMs: 1,
         packetLossPct: 0.0,
         wifi24Channel: 1,
-        wifi24SaturationPct: 22,
+        wifi24SaturationPct: 20,
         wifi5Channel: 149,
-        wifi5SaturationPct: 12,
-        healthScore: 99,
-        downloadMbps: 618,
-        uploadMbps: 604,
+        wifi5SaturationPct: 10,
+        healthScore: 100,
+        downloadMbps: 600,
+        uploadMbps: 600,
       }));
 
       setDiagnosticLogs((prev) => [
         {
           id: `log-opt-${Date.now()}`,
           time,
-          phase: 'Fase 2 · Optimización Remota',
-          detail:
-            'Canal 5 GHz migrado a 149 (12% saturación). Latencia reducida de 142 ms a 8 ms sin reinicio.',
+          title: 'Wi-Fi optimizado con éxito',
+          detail: 'Se cambió tu red a una señal libre de interferencias sin reiniciar tu router.',
           status: 'ok',
         },
         ...prev,
@@ -488,7 +401,7 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
                   ? {
                       ...m.actionButton,
                       completed: true,
-                      completedLabel: 'Canal Wi-Fi optimizado con éxito',
+                      completedLabel: 'Wi-Fi mejorado con éxito',
                     }
                   : undefined,
               }
@@ -501,22 +414,20 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
             id: `user-consent-${Date.now()}`,
             sender: 'user',
             timestamp: time,
-            text: 'Sí, autorizo optimizar mi canal Wi-Fi ahora.',
+            text: 'Sí, mejorar mi Wi-Fi ahora.',
           },
           {
             id: `cop-opt-done-${Date.now() + 1}`,
             sender: 'copilot',
             timestamp: time,
-            phaseBadge: 'FASE 2 COMPLETADA · VALIDACIÓN EN TIEMPO REAL',
-            text: '¡Listo, Axel! En 1.5 segundos migré tu red 5 GHz al Canal 149 libre de interferencias y optimicé la banda de 2.4 GHz al Canal 1, sin desconectar tus 11 dispositivos ni reiniciar el módem. Aquí tienes la validación en vivo:',
+            text: '¡Listo, Axel! Ya pasé tu Wi-Fi a una señal libre de interferencias sin desconectar tus equipos ni apagar tu router. Tu velocidad ya está al máximo:',
             cardType: 'METRICS_DIFF',
             metricsDiff: {
-              title: 'Resultado de Optimización Remota (ONT Huawei HG8145X6)',
+              title: 'Mejora aplicada en tu conexión',
               items: [
-                { label: 'Canal Wi-Fi 5 GHz', before: 'Canal 36 (92% sat.)', after: 'Canal 149 (12% libre)' },
-                { label: 'Latencia (Ping)', before: '142 ms (Con lag)', after: '8 ms (Ultra rápido)' },
-                { label: 'Pérdida de Paquetes', before: '4.8%', after: '0.0%' },
-                { label: 'Velocidad Descarga', before: '168 Mbps', after: '618 Mbps' },
+                { label: 'Señal Wi-Fi en casa', before: 'Con interferencia', after: 'Libre y estable' },
+                { label: 'Videollamadas y juegos', before: 'Con pausas', after: 'Fluido y sin cortes' },
+                { label: 'Velocidad de internet', before: 'Lenta', after: 'Rápida (600 Mbps)' },
               ],
             },
           },
@@ -531,34 +442,30 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
   const triggerVerifyPatchcord = useCallback((messageId?: string) => {
     setPatchcordModalOpen(false);
     setIsExecutingAction(true);
-    setExecutingActionText(
-      'Re-escaneando potencia óptica láser (1490 nm) en el puerto verde PON de tu router...'
-    );
+    setExecutingActionText('Verificando la señal del cable amarillo en tu router...');
 
     setTimeout(() => {
       const time = getNowTimeStr();
 
       setTelemetry((prev) => ({
         ...prev,
-        phase: 3,
         rxPowerDbm: -19.0,
         txPowerDbm: 2.4,
         pingMs: 8,
         jitterMs: 1,
         packetLossPct: 0.0,
         ponStatus: 'ONLINE',
-        healthScore: 99,
-        downloadMbps: 615,
-        uploadMbps: 602,
+        healthScore: 100,
+        downloadMbps: 600,
+        uploadMbps: 600,
       }));
 
       setDiagnosticLogs((prev) => [
         {
           id: `log-patch-${Date.now()}`,
           time,
-          phase: 'Fase 3 · Re-escaneo PON',
-          detail:
-            'Conector SC/APC asegurado. Potencia óptica recuperada de -28.6 dBm a -19.0 dBm (Rango óptimo).',
+          title: 'Cable amarillo bien conectado',
+          detail: 'La señal de fibra se recuperó por completo y tu internet ya está estable.',
           status: 'ok',
         },
         ...prev,
@@ -573,7 +480,7 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
                   ? {
                       ...m.actionButton,
                       completed: true,
-                      completedLabel: 'Ajuste físico verificado (-19.0 dBm)',
+                      completedLabel: 'Conexión verificada y estable',
                     }
                   : undefined,
               }
@@ -586,22 +493,20 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
             id: `user-patch-${Date.now()}`,
             sender: 'user',
             timestamp: time,
-            text: 'Ya lo ajusté, verificar ahora.',
+            text: 'Ya lo acomodé, volver a revisar.',
           },
           {
             id: `cop-patch-done-${Date.now() + 1}`,
             sender: 'copilot',
             timestamp: time,
-            phaseBadge: 'FASE 3 COMPLETADA · SEÑAL ÓPTICA RESTABLECIDA',
-            text: '¡Excelente trabajo, Axel! Acabo de medir el láser en el puerto PON y la potencia óptica subió de -28.6 dBm a -19.0 dBm (rango óptimo). La pérdida de paquetes bajó a 0% y te ahorraste esperar una visita técnica por un cable flojo.',
+            text: '¡Quedó perfecto, Axel! Acabo de revisar tu router y la señal ya entra con toda su fuerza. No hace falta esperar a un técnico, tu internet ya funciona al 100%.',
             cardType: 'METRICS_DIFF',
             metricsDiff: {
-              title: 'Validación Óptica tras Ajuste de Patchcord',
+              title: 'Revisión del cable completada',
               items: [
-                { label: 'Potencia Óptica Rx', before: '-28.6 dBm (Atenuada)', after: '-19.0 dBm (Óptima)' },
-                { label: 'Pérdida de Paquetes', before: '8.5%', after: '0.0%' },
-                { label: 'Latencia (Ping)', before: '96 ms', after: '8 ms' },
-                { label: 'Velocidad Efectiva', before: '64 Mbps', after: '615 Mbps' },
+                { label: 'Señal del cable amarillo', before: 'Débil (Cable flojo)', after: 'Excelente' },
+                { label: 'Estabilidad del internet', before: 'Con microcortes', after: 'Sin interrupciones' },
+                { label: 'Velocidad en casa', before: 'Reducida', after: 'Rápida (600 Mbps)' },
               ],
             },
           },
@@ -615,35 +520,20 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
   const runQuickTelemetryScan = useCallback(() => {
     setIsExecutingAction(true);
-    setExecutingActionText('Consultando telemetría en tiempo real de la ONT y Nodo San Isidro...');
+    setExecutingActionText('Revisando el estado de tu conexión...');
 
     setTimeout(() => {
       const time = getNowTimeStr();
-      setDiagnosticLogs((prev) => [
-        {
-          id: `log-scan-${Date.now()}`,
-          time,
-          phase: 'Test Preventivo en Vivo',
-          detail: `Lectura confirmada: Rx ${
-            telemetry.rxPowerDbm !== null ? `${telemetry.rxPowerDbm} dBm` : 'LOS'
-          } | Ping ${telemetry.pingMs} ms | Salud ${telemetry.healthScore}%.`,
-          status: telemetry.healthScore >= 85 ? 'ok' : telemetry.healthScore >= 50 ? 'warning' : 'critical',
-        },
-        ...prev,
-      ]);
-
       setMessages((prev) => [
         ...prev,
         {
           id: `cop-scan-${Date.now()}`,
           sender: 'copilot',
           timestamp: time,
-          phaseBadge: 'TELEMETRÍA EN TIEMPO REAL VERIFICADA',
-          text: `Diagnóstico instantáneo completado: Potencia óptica en ${
-            telemetry.rxPowerDbm !== null ? `${telemetry.rxPowerDbm.toFixed(1)} dBm` : 'LOS'
-          }, ping de ${telemetry.pingMs} ms, pérdida de ${telemetry.packetLossPct}% y velocidad de ${
-            telemetry.downloadMbps
-          } Mbps en ${telemetry.nodeName}.`,
+          text:
+            telemetry.healthScore >= 85
+              ? 'Acabo de revisar tu router y todo está funcionando muy bien: tanto la señal que viene de la calle como el Wi-Fi dentro de tu casa están al 100%.'
+              : 'Revisé tu conexión y todavía tenemos un ajuste pendiente. Puedes usar el botón de arriba para solucionarlo en un paso.',
         },
       ]);
 
@@ -677,16 +567,15 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
       const [response] = await Promise.all([
         generateCopilotResponse(trimmed, telemetry, historyForLlm),
-        new Promise((resolve) => setTimeout(resolve, 850)),
+        new Promise((resolve) => setTimeout(resolve, 600)),
       ]);
 
       const replyTime = getNowTimeStr();
 
-      // Si el usuario pide optimizar o hay una acción pendiente del escenario actual, ofrecemos botón contextual
       let contextualAction: ChatMessageItem['actionButton'] | undefined;
       if (telemetry.scenarioId === 'A' && telemetry.wifi5SaturationPct > 50) {
         contextualAction = {
-          label: '¿Deseas que optimice tu canal Wi-Fi ahora?',
+          label: 'Sí, mejorar mi Wi-Fi ahora',
           actionType: 'OPTIMIZE_WIFI',
           completed: false,
         };
@@ -696,7 +585,7 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
         telemetry.rxPowerDbm < -25
       ) {
         contextualAction = {
-          label: 'Ya lo ajusté, verificar ahora',
+          label: 'Ya lo acomodé, volver a revisar',
           actionType: 'VERIFY_PATCHCORD',
           completed: false,
         };
@@ -706,9 +595,6 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
         id: `cop-${Date.now()}`,
         sender: 'copilot',
         timestamp: replyTime,
-        phaseBadge: response.usedGemini
-          ? 'COPILOTO CLARO · GEMINI AI + TELEMETRÍA EN VIVO'
-          : 'COPILOTO CLARO · MOTOR NLP + TELEMETRÍA EN VIVO',
         text: response.text,
         usedGemini: response.usedGemini,
         actionButton: contextualAction,
@@ -732,15 +618,12 @@ export const NetworkSimulationProvider: React.FC<{ children: React.ReactNode }> 
         isTyping,
         isPatchcordModalOpen,
         isDemoDrawerOpen,
-        geminiConnected,
-        customApiKey,
         selectScenario,
         sendUserMessage,
         triggerOptimizeWifi,
         triggerVerifyPatchcord,
         setPatchcordModalOpen,
         setDemoDrawerOpen,
-        updateCustomApiKey,
         runQuickTelemetryScan,
       }}
     >
