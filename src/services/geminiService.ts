@@ -34,11 +34,7 @@ const GEMINI_MODELS = [
 ];
 
 function getOrderedApiKeys(): string[] {
-  const envKey =
-    (typeof process !== 'undefined' &&
-      process.env &&
-      (process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY)) ||
-    '';
+  const envKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
   const keys: string[] = [];
   if (
@@ -324,6 +320,23 @@ function getContextualFallbackResponse(
     q.includes('contrasena')
   ) {
     return `En este momento tienes ${telemetry.connectedDevices} dispositivos conectados al Wi-Fi de tu casa (celulares, laptops y televisores). Todos están reconocidos y navegando de forma segura en tu red Claro.`;
+  }
+
+  // 8. Preguntas sobre corte de luz / energía eléctrica
+  if (q.includes('corte de luz') || q.includes('luz') || q.includes('apagon') || q.includes('energia')) {
+    return 'Si hay un corte de luz en casa, tu router se apagará mientras no haya electricidad. Te recomiendo desenchufarlo para protegerlo de subidas de tensión; apenas regrese la luz y lo enchufes, tu internet volverá automáticamente en 2 minutos.';
+  }
+
+  // 9. Solicitud de derivación a un asesor humano / persona
+  if (
+    q.includes('persona') ||
+    q.includes('humano') ||
+    q.includes('asesor') ||
+    q.includes('operador') ||
+    q.includes('derives') ||
+    q.includes('llamar')
+  ) {
+    return '¡Claro que sí, Axel! Te estoy transfiriendo con un asesor especializado de Claro y le estoy enviando todo el resumen de tu conexión para que no te haga repetir ninguna prueba ni reiniciar tu router.';
   }
 
   // 8. Respuesta conversacional inteligente según si ya está todo bien o si hay algo pendiente
