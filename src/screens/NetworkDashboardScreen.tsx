@@ -77,7 +77,7 @@ export const NetworkDashboardScreen: React.FC<{
 
         <Text style={styles.heroMainStatus}>{overallStatusLabel}</Text>
         <Text style={styles.heroPlanText}>
-          Plan Claro Hogar Fibra {telemetry.contractedMbps} Mbps · San Isidro
+          Plan Claro Hogar Fibra {telemetry.contractedMbps} Mbps · {telemetry.nodeName}
         </Text>
 
         {/* Esquema Visual Sencillo de la Red del Hogar */}
@@ -232,7 +232,7 @@ export const NetworkDashboardScreen: React.FC<{
 
       {/* 1. Estado de la zona */}
       <TelemetryBadge
-        label="Servicio en tu cuadra (San Isidro)"
+        label={`Servicio en tu cuadra (${telemetry.nodeName})`}
         value={
           zoneStatus === 'optimal'
             ? 'Sin inconvenientes en la calle'

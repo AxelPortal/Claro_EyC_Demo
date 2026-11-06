@@ -15,6 +15,7 @@ import {
 } from './context/NetworkSimulationContext';
 import { SupportChatScreen } from './screens/SupportChatScreen';
 import { NetworkDashboardScreen } from './screens/NetworkDashboardScreen';
+import { AuthScreen } from './screens/AuthScreen';
 import { PatchcordGuideModal } from './components/PatchcordGuideModal';
 import { DemoScenarioDrawer } from './components/DemoScenarioDrawer';
 
@@ -22,13 +23,29 @@ type TabKey = 'chat' | 'dashboard';
 
 const MainShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
-  const { setDemoDrawerOpen, telemetry } = useNetworkSimulation();
+  const {
+    currentUser,
+    logoutUser,
+    setDemoDrawerOpen,
+    telemetry,
+  } = useNetworkSimulation();
+
+  if (!currentUser) {
+    return (
+      <SafeAreaView style={styles.outerBackground}>
+        <StatusBar style="light" />
+        <View style={styles.appWrapper}>
+          <AuthScreen />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.outerBackground}>
       <StatusBar style="light" />
       <View style={styles.appWrapper}>
-        {/* Cabecera Oficial con el Logo Claro */}
+        {/* Cabecera Oficial con el Logo Claro y Nombre del Usuario */}
         <View style={styles.header}>
           <View style={styles.brandRow}>
             <View style={styles.logoCard}>
@@ -41,31 +58,41 @@ const MainShell: React.FC = () => {
             <View style={styles.headerTitleCol}>
               <Text style={styles.headerTitle}>Soporte Mi Claro</Text>
               <Text style={styles.headerSub} numberOfLines={1}>
-                Hogar · San Isidro
+                Hola, {currentUser.firstName} · {currentUser.district}
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.statusMenuBtn}
-            onPress={() => setDemoDrawerOpen(true)}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor:
-                    telemetry.healthScore >= 85
-                      ? '#10B981'
-                      : telemetry.scenarioId === 'C'
-                      ? '#FCA5A5'
-                      : '#FBBF24',
-                },
-              ]}
-            />
-            <Text style={styles.statusMenuBtnText}>Estado de red ▾</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.statusMenuBtn}
+              onPress={() => setDemoDrawerOpen(true)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor:
+                      telemetry.healthScore >= 85
+                        ? '#10B981'
+                        : telemetry.scenarioId === 'C'
+                        ? '#FCA5A5'
+                        : '#FBBF24',
+                  },
+                ]}
+              />
+              <Text style={styles.statusMenuBtnText}>Red ▾</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={logoutUser}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.logoutBtnText}>Salir</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Pantalla activa */}
@@ -202,39 +229,56 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   headerLogo: {
-    width: 62,
-    height: 22,
+    width: 58,
+    height: 20,
   },
   headerTitleCol: {
     flex: 1,
   },
   headerTitle: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
   headerSub: {
     color: '#FEE2E2',
     fontSize: 12,
     marginTop: 1,
+    fontWeight: '600',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statusMenuBtn: {
     backgroundColor: 'rgba(0, 0, 0, 0.22)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 6,
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    marginRight: 5,
   },
   statusMenuBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  logoutBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  logoutBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: '700',
   },
   screenContainer: {
