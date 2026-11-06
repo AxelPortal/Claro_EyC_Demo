@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -27,11 +28,15 @@ const MainShell: React.FC = () => {
     <SafeAreaView style={styles.outerBackground}>
       <StatusBar style="light" />
       <View style={styles.appWrapper}>
-        {/* Cabecera limpia estilo App Mi Claro */}
+        {/* Cabecera Oficial con el Logo Claro */}
         <View style={styles.header}>
           <View style={styles.brandRow}>
-            <View style={styles.claroCircle}>
-              <Text style={styles.claroCircleText}>Claro</Text>
+            <View style={styles.logoCard}>
+              <Image
+                source={require('../assets/claro-logo.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
             </View>
             <View style={styles.headerTitleCol}>
               <Text style={styles.headerTitle}>Soporte Mi Claro</Text>
@@ -41,7 +46,6 @@ const MainShell: React.FC = () => {
             </View>
           </View>
 
-          {/* Acceso discreto para cambiar el estado de la red */}
           <TouchableOpacity
             style={styles.statusMenuBtn}
             onPress={() => setDemoDrawerOpen(true)}
@@ -83,14 +87,21 @@ const MainShell: React.FC = () => {
             onPress={() => setActiveTab('chat')}
             activeOpacity={0.85}
           >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === 'chat' && styles.tabTextActive,
-              ]}
-            >
-              💬 Asistente
-            </Text>
+            <View style={styles.tabTitleRow}>
+              <Image
+                source={require('../assets/claro-circle-logo.png')}
+                style={styles.tabMiniLogo}
+                resizeMode="contain"
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === 'chat' && styles.tabTextActive,
+                ]}
+              >
+                Asistente
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -165,9 +176,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#DA291C',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 36 : 14,
-    paddingBottom: 14,
+    paddingHorizontal: 14,
+    paddingTop: Platform.OS === 'android' ? 36 : 12,
+    paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -178,20 +189,21 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  claroCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  logoCard: {
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 10,
     marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  claroCircleText: {
-    color: '#DA291C',
-    fontWeight: '900',
-    fontSize: 12,
-    letterSpacing: -0.3,
+  headerLogo: {
+    width: 62,
+    height: 22,
   },
   headerTitleCol: {
     flex: 1,
@@ -207,7 +219,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   statusMenuBtn: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
@@ -250,6 +262,11 @@ const styles = StyleSheet.create({
   tabTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  tabMiniLogo: {
+    width: 18,
+    height: 18,
+    marginRight: 6,
   },
   tabLabel: {
     fontSize: 14,

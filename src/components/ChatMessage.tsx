@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import {
   ChatMessageItem,
   useNetworkSimulation,
@@ -66,8 +66,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       ]}
     >
       {!isUser && (
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>C</Text>
+        <View style={styles.avatarContainer}>
+          <Image
+            source={require('../../assets/claro-circle-logo.png')}
+            style={styles.avatarImage}
+            resizeMode="contain"
+          />
+          <View style={styles.onlineDot} />
         </View>
       )}
 
@@ -78,7 +83,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         ]}
       >
         {!isUser && (
-          <Text style={styles.copilotName}>Asistente Claro</Text>
+          <View style={styles.copilotHeaderRow}>
+            <Text style={styles.copilotName}>Asistente Claro</Text>
+            <View style={styles.verifiedPill}>
+              <Text style={styles.verifiedPillText}>✓ Oficial</Text>
+            </View>
+          </View>
         )}
 
         <Text style={[styles.messageText, isUser ? styles.userText : styles.copilotText]}>
@@ -130,7 +140,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             <Text style={styles.actionButtonText}>
               {message.actionButton.completed
                 ? `✓ ${message.actionButton.completedLabel || 'Listo'}`
-                : message.actionButton.label}
+                : `✨ ${message.actionButton.label}`}
             </Text>
           </TouchableOpacity>
         )}
@@ -150,6 +160,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         <View style={styles.timestampRow}>
           <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.copilotTimestamp]}>
             {message.timestamp}
+            {isUser ? ' ✓✓' : ''}
           </Text>
         </View>
       </View>
@@ -178,7 +189,7 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: 'row',
-    marginVertical: 6,
+    marginVertical: 7,
     paddingHorizontal: 14,
     alignItems: 'flex-end',
   },
@@ -188,25 +199,38 @@ const styles = StyleSheet.create({
   copilotRow: {
     justifyContent: 'flex-start',
   },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#DA291C',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
+  avatarContainer: {
+    width: 36,
+    height: 36,
+    marginRight: 9,
+    position: 'relative',
   },
-  avatarText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 14,
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#F3F4F6',
   },
   bubble: {
-    maxWidth: '84%',
+    maxWidth: '83%',
     borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   copilotBubble: {
     backgroundColor: '#FFFFFF',
@@ -218,11 +242,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#DA291C',
     borderBottomRightRadius: 4,
   },
+  copilotHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
   copilotName: {
     fontSize: 12,
     fontWeight: '800',
     color: '#DA291C',
-    marginBottom: 4,
+    marginRight: 6,
+  },
+  verifiedPill: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  verifiedPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#DA291C',
   },
   messageText: {
     fontSize: 14,
@@ -233,6 +273,7 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: '#FFFFFF',
+    fontWeight: '500',
   },
   metricsDiffCard: {
     backgroundColor: '#F0FDF4',
@@ -282,14 +323,20 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     backgroundColor: '#DA291C',
-    paddingVertical: 11,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
-    marginTop: 10,
+    marginTop: 11,
     alignItems: 'center',
+    shadowColor: '#DA291C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionButtonCompleted: {
     backgroundColor: '#10B981',
+    shadowColor: '#10B981',
   },
   actionButtonDisabled: {
     opacity: 0.65,

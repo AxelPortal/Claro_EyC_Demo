@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useNetworkSimulation } from '../context/NetworkSimulationContext';
 import { TelemetryBadge, TelemetryStatus } from '../components/TelemetryBadge';
@@ -35,7 +36,7 @@ export const NetworkDashboardScreen: React.FC<{
 
   const overallStatusLabel =
     telemetry.healthScore >= 85
-      ? 'Todo funciona muy bien'
+      ? 'Tu internet está al 100%'
       : telemetry.scenarioId === 'C'
       ? 'Avería externa en tu cuadra'
       : 'Tu conexión puede mejorar';
@@ -53,17 +54,141 @@ export const NetworkDashboardScreen: React.FC<{
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Resumen Principal Sencillo */}
+      {/* Tarjeta Principal con Branding Oficial Claro */}
       <View style={styles.heroCard}>
-        <View style={styles.statusHeader}>
-          <View style={[styles.statusBadgeDot, { backgroundColor: overallColor }]} />
-          <Text style={styles.heroOverline}>ESTADO DE TU INTERNET HOGAR</Text>
+        <View style={styles.heroHeaderRow}>
+          <View style={styles.claroWhiteBadge}>
+            <Image
+              source={require('../../assets/claro-logo.png')}
+              style={styles.heroLogo}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={[styles.statusPill, { backgroundColor: overallColor }]}>
+            <Text style={styles.statusPillText}>
+              {telemetry.healthScore >= 85
+                ? '✓ Óptimo'
+                : telemetry.scenarioId === 'C'
+                ? 'En atención'
+                : 'Por mejorar'}
+            </Text>
+          </View>
         </View>
 
         <Text style={styles.heroMainStatus}>{overallStatusLabel}</Text>
         <Text style={styles.heroPlanText}>
-          Plan Claro Hogar {telemetry.contractedMbps} Mbps · {telemetry.connectedDevices} equipos conectados en casa
+          Plan Claro Hogar Fibra {telemetry.contractedMbps} Mbps · San Isidro
         </Text>
+
+        {/* Esquema Visual Sencillo de la Red del Hogar */}
+        <View style={styles.visualMapCard}>
+          <View style={styles.mapNode}>
+            <View
+              style={[
+                styles.mapIconCircle,
+                {
+                  borderColor:
+                    zoneStatus === 'optimal' ? '#10B981' : '#EF4444',
+                },
+              ]}
+            >
+              <Text style={styles.mapEmoji}>🌐</Text>
+            </View>
+            <Text style={styles.mapNodeLabel}>Red Claro</Text>
+            <Text
+              style={[
+                styles.mapNodeState,
+                { color: zoneStatus === 'optimal' ? '#10B981' : '#FCA5A5' },
+              ]}
+            >
+              {zoneStatus === 'optimal' ? 'Estable' : 'Con avería'}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.mapLine,
+              {
+                backgroundColor:
+                  fiberStatus === 'optimal'
+                    ? '#10B981'
+                    : fiberStatus === 'warning'
+                    ? '#F59E0B'
+                    : '#EF4444',
+              },
+            ]}
+          />
+
+          <View style={styles.mapNode}>
+            <View
+              style={[
+                styles.mapIconCircle,
+                {
+                  borderColor:
+                    fiberStatus === 'optimal'
+                      ? '#10B981'
+                      : fiberStatus === 'warning'
+                      ? '#F59E0B'
+                      : '#EF4444',
+                },
+              ]}
+            >
+              <Image
+                source={require('../../assets/claro-circle-logo.png')}
+                style={styles.routerMiniLogo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.mapNodeLabel}>Tu Router</Text>
+            <Text
+              style={[
+                styles.mapNodeState,
+                {
+                  color:
+                    fiberStatus === 'optimal'
+                      ? '#10B981'
+                      : fiberStatus === 'warning'
+                      ? '#FCD34D'
+                      : '#FCA5A5',
+                },
+              ]}
+            >
+              {fiberStatus === 'optimal'
+                ? 'Conectado'
+                : fiberStatus === 'warning'
+                ? 'Cable flojo'
+                : 'Sin señal'}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.mapLine,
+              {
+                backgroundColor:
+                  wifiStatus === 'optimal' ? '#10B981' : '#F59E0B',
+              },
+            ]}
+          />
+
+          <View style={styles.mapNode}>
+            <View
+              style={[
+                styles.mapIconCircle,
+                {
+                  borderColor:
+                    wifiStatus === 'optimal' ? '#10B981' : '#F59E0B',
+                },
+              ]}
+            >
+              <Text style={styles.mapEmoji}>📱</Text>
+            </View>
+            <Text style={styles.mapNodeLabel}>Tus Equipos</Text>
+            <Text style={styles.mapNodeState}>
+              {telemetry.connectedDevices} conectados
+            </Text>
+          </View>
+        </View>
 
         {telemetry.wifi5SaturationPct > 70 && (
           <TouchableOpacity
@@ -73,7 +198,9 @@ export const NetworkDashboardScreen: React.FC<{
             activeOpacity={0.85}
           >
             <Text style={styles.primaryActionBtnText}>
-              {isExecutingAction ? 'Mejorando tu Wi-Fi...' : 'Mejorar mi señal Wi-Fi ahora'}
+              {isExecutingAction
+                ? 'Mejorando tu Wi-Fi...'
+                : '✨ Mejorar mi señal Wi-Fi ahora'}
             </Text>
           </TouchableOpacity>
         )}
@@ -97,7 +224,7 @@ export const NetworkDashboardScreen: React.FC<{
             activeOpacity={0.85}
           >
             <Text style={styles.secondaryActionBtnText}>
-              Hablar con el Asistente Claro
+              💬 Consultar al Asistente Claro
             </Text>
           </TouchableOpacity>
         )}
@@ -113,7 +240,7 @@ export const NetworkDashboardScreen: React.FC<{
         }
         subLabel={
           zoneStatus === 'optimal'
-            ? 'La red exterior de Claro opera con total normalidad en tu distrito.'
+            ? 'La señal exterior de Claro llega con normalidad a tu edificio.'
             : 'Nuestro equipo técnico ya tiene asignada la reparación afuera de tu hogar. No necesitas llamar.'
         }
         status={zoneStatus}
@@ -131,7 +258,7 @@ export const NetworkDashboardScreen: React.FC<{
         }
         subLabel={
           fiberStatus === 'optimal'
-            ? 'La señal llega con fuerza óptima hasta tu router.'
+            ? 'El cable detrás de tu router recibe la señal con fuerza óptima.'
             : fiberStatus === 'warning'
             ? 'Revisa que el cable amarillo detrás del router esté estirado y bien enchufado en la entrada verde.'
             : 'Tu router está en buen estado; la interrupción viene desde el cableado exterior.'
@@ -149,15 +276,15 @@ export const NetworkDashboardScreen: React.FC<{
         }
         subLabel={
           wifiStatus === 'optimal'
-            ? `Tus ${telemetry.connectedDevices} dispositivos conectados navegan sin congestión.`
-            : 'Hay varios routers cercanos usando el mismo canal. Podemos pasarte a uno libre automáticamente.'
+            ? `Tus ${telemetry.connectedDevices} dispositivos conectados navegan a máxima velocidad.`
+            : 'Hay varios routers cercanos saturando tu señal. Podemos pasarte a un canal libre automáticamente.'
         }
         status={wifiStatus}
       />
 
       {/* Actividad reciente */}
       <View style={styles.logsCard}>
-        <Text style={styles.logsTitle}>Revisiones recientes</Text>
+        <Text style={styles.logsTitle}>Revisiones automáticas recientes</Text>
         {diagnosticLogs.map((log) => (
           <View key={log.id} style={styles.logItem}>
             <View
@@ -190,7 +317,7 @@ export const NetworkDashboardScreen: React.FC<{
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F4F5F7',
   },
   content: {
     padding: 14,
@@ -198,37 +325,94 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     backgroundColor: '#1F2937',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 14,
   },
-  statusHeader: {
+  heroHeaderRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 12,
   },
-  statusBadgeDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    marginRight: 7,
+  claroWhiteBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  heroOverline: {
-    color: '#D1D5DB',
+  heroLogo: {
+    width: 64,
+    height: 22,
+  },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusPillText: {
+    color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.4,
+    fontWeight: '800',
   },
   heroMainStatus: {
     color: '#FFFFFF',
     fontSize: 21,
     fontWeight: '800',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   heroPlanText: {
-    color: '#9CA3AF',
+    color: '#D1D5DB',
     fontSize: 13,
     marginBottom: 14,
+  },
+  visualMapCard: {
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  mapNode: {
+    alignItems: 'center',
+    width: 82,
+  },
+  mapIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1F2937',
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  mapEmoji: {
+    fontSize: 18,
+  },
+  routerMiniLogo: {
+    width: 28,
+    height: 28,
+  },
+  mapNodeLabel: {
+    color: '#F9FAFB',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  mapNodeState: {
+    color: '#9CA3AF',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  mapLine: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    marginBottom: 22,
   },
   primaryActionBtn: {
     backgroundColor: '#DA291C',

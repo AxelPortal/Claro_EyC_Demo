@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { TicketAveriaData } from '../context/NetworkSimulationContext';
 
 interface TicketAveriaCardProps {
@@ -18,8 +18,12 @@ export const TicketAveriaCard: React.FC<TicketAveriaCardProps> = ({ ticket }) =>
     <View style={styles.voucherContainer}>
       <View style={styles.headerBanner}>
         <View style={styles.headerTopRow}>
-          <View style={styles.claroBadge}>
-            <Text style={styles.claroBadgeText}>Claro Perú</Text>
+          <View style={styles.claroLogoBox}>
+            <Image
+              source={require('../../assets/claro-logo.png')}
+              style={styles.claroLogoImg}
+              resizeMode="contain"
+            />
           </View>
           <View style={styles.osiptelBadge}>
             <Text style={styles.osiptelBadgeText}>{ticket.osiptelCode}</Text>
@@ -99,18 +103,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  claroBadge: {
+  claroLogoBox: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 6,
   },
-  claroBadgeText: {
-    color: '#DA291C',
-    fontWeight: '800',
-    fontSize: 11,
+  claroLogoImg: {
+    width: 56,
+    height: 20,
   },
   osiptelBadge: {
     backgroundColor: 'rgba(0,0,0,0.22)',

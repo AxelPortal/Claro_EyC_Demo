@@ -52,44 +52,80 @@ function getOrderedApiKeys(): string[] {
 }
 
 function buildSystemInstruction(telemetry: TelemetrySnapshot): string {
-  let estadoSencillo = 'Tu conexión funciona excelente y a máxima velocidad.';
-  if (telemetry.scenarioId === 'A' && telemetry.wifi5SaturationPct > 50) {
-    estadoSencillo =
-      'El internet llega bien a tu casa desde la calle, pero tu Wi-Fi tiene interferencia porque hay muchas redes de vecinos usando el mismo canal. Eso causa lentitud o pequeños cortes. Puedes cambiarlo a un canal libre automáticamente si el cliente acepta.';
-  } else if (
+  const wifiFixed =
+    telemetry.scenarioId === 'A' && telemetry.wifi5SaturationPct <= 40;
+  const cableFixed =
     telemetry.scenarioId === 'B' &&
     telemetry.rxPowerDbm !== null &&
-    telemetry.rxPowerDbm < -25
-  ) {
-    estadoSencillo =
-      'La señal que llega por el cable amarillo de fibra óptica (detrás de tu router) está débil porque el cable parece estar un poco doblado o flojo en la entrada verde. Invita al cliente a revisar que el cable amarillo esté recto y bien conectado hasta escuchar un clic.';
+    telemetry.rxPowerDbm >= -24.5;
+
+  let situacionActual = 'Tu internet funciona excelente y a máxima velocidad (600 Mbps).';
+  if (wifiFixed) {
+    situacionActual =
+      'Hace un momento el Wi-Fi de Axel tenía interferencia con las redes de sus vecinos, pero TÚ (el Asistente Claro) YA LO SOLUCIONASTE automáticamente cambiándolo a una señal libre sin apagar su router. Ahora su internet ya está rápido y excelente (600 Mbps). Si te pregunta cómo lo hiciste, explícale de forma sencilla que buscaste un camino de señal Wi-Fi despejado en su casa donde no estorben los routers de los vecinos.';
+  } else if (cableFixed) {
+    situacionActual =
+      'Hace un momento el cable amarillo detrás del router de Axel estaba un poco doblado o flojo, pero Axel YA LO ACOMODÓ y tú verificaste que la señal quedó excelente y al 100% (600 Mbps).';
+  } else if (telemetry.scenarioId === 'A') {
+    situacionActual =
+      'El internet llega bien desde la calle, pero el Wi-Fi dentro de la casa tiene interferencia porque los routers de los vecinos están saturando el mismo camino de señal. Ofrece cambiarlo automáticamente con el botón en pantalla.';
+  } else if (telemetry.scenarioId === 'B') {
+    situacionActual =
+      'La señal que entra por el cable amarillo detrás del router llega débil porque ese cable parece estar doblado o un poquito flojo en la entrada verde. Guíalo con cariño para que lo estire y lo presione suavemente.';
   } else if (telemetry.scenarioId === 'C') {
-    estadoSencillo =
-      'Hay una avería en el cableado de la calle en tu zona (San Isidro). El router de su casa está bien, por lo que NO debe reiniciarlo. Ya se generó automáticamente su ticket oficial de avería con visita técnica programada para hoy sin que tenga que llamar por teléfono.';
+    situacionActual =
+      'Hay una avería en el cableado exterior de la calle en su cuadra de San Isidro. El router de su casa está bien, así que NO debe reiniciarlo. Ya se emitió su código de atención CLARO-AV-2026-9814 y los técnicos lo repararán hoy entre 4:30 pm y 6:00 pm en el poste de la calle.';
   }
 
-  return `Eres "Asistente Claro", el soporte inteligente de Claro Perú integrado en la app Mi Claro del cliente Axel.
+  return `Eres "Asistente Claro", el asistente virtual inteligente de Claro Perú dentro de la app Mi Claro del cliente Axel.
 
-REGLAS DE ORO PARA HABLAR CON EL CLIENTE:
-1. Habla de forma muy sencilla, cálida, amigable y fácil de entender para cualquier persona en casa.
-2. PROHIBIDO usar jerga técnica complicada o llenar el mensaje de números confusos (NO menciones dBm, OMCI, TR-069, latencia en ms, pérdida de paquetes, BSSID, ONT, splitter ni porcentajes complejos a menos que el usuario te pregunte explícitamente por el dato técnico).
-3. PROHIBIDO mencionar que esto es una "demo", "prototipo", "escenario" o que existen "fases". Actúa como la aplicación final real de Claro Perú.
-4. Nunca le pidas reiniciar el módem sin sentido.
-5. Sé breve y directo: responde en máximo 2 o 3 oraciones claras.
+REGLAS ESTRICTAS:
+1. Responde SIEMPRE directamente a lo que el usuario te está preguntando (por ejemplo, si saluda con "Hola", salúdalo con calidez; si pregunta "¿Cómo lo hiciste?", explícale en palabras sencillas qué ajuste hiciste; si agradece, responde con amabilidad).
+2. Usa un lenguaje cotidiano, claro y empático. NO uses términos técnicos difíciles (prohibido decir dBm, TR-069, OMCI, BSSID, latencia en ms, pérdida de paquetes, splitter u ONT).
+3. NO menciones nunca que esto es una demo, prototipo, escenario o fase.
+4. Sé conciso: responde en 2 a 3 oraciones naturales.
 
-ESTADO ACTUAL DE LA CONEXIÓN DE AXEL:
-- Situación actual: ${estadoSencillo}
-- Plan contratado: Internet Hogar 600 Mbps en San Isidro
-- Equipos conectados en casa: ${telemetry.connectedDevices} dispositivos
-- Estado general: ${
-    telemetry.healthScore >= 85
-      ? 'Excelente'
-      : telemetry.healthScore >= 50
-      ? 'Wi-Fi con interferencia vecina (fácil de mejorar)'
-      : telemetry.scenarioId === 'B'
-      ? 'Cable amarillo de fibra flojo o doblado en casa'
-      : 'Avería externa en la calle (Ticket oficial CLARO-AV-2026-9814 ya generado)'
-  }`;
+CONTEXTO EN VIVO DEL HOGAR DE AXEL:
+- Estado actual: ${situacionActual}
+- Plan: Claro Hogar 600 Mbps en San Isidro (${telemetry.connectedDevices} equipos conectados en casa).`;
+}
+
+function buildNormalizedContents(
+  history: ChatHistoryItem[],
+  userMessage: string
+): Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> {
+  const raw = [
+    ...history.slice(-6).map((h) => ({
+      role: (h.role === 'user' ? 'user' : 'model') as 'user' | 'model',
+      text: h.text,
+    })),
+    { role: 'user' as const, text: userMessage },
+  ];
+
+  // Fusionar turnos consecutivos del mismo rol y asegurar que inicie con 'user'
+  const merged: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+  for (const item of raw) {
+    if (!item.text.trim()) continue;
+    const prev = merged[merged.length - 1];
+    if (prev && prev.role === item.role) {
+      prev.parts[0].text += `\n${item.text}`;
+    } else {
+      merged.push({
+        role: item.role,
+        parts: [{ text: item.text }],
+      });
+    }
+  }
+
+  // Si el primer mensaje es 'model', anteponer un contexto de usuario implícito para cumplir validación estricta
+  if (merged.length > 0 && merged[0].role === 'model') {
+    merged.unshift({
+      role: 'user',
+      parts: [{ text: 'Hola, revisa cómo está mi conexión de internet en casa.' }],
+    });
+  }
+
+  return merged;
 }
 
 export async function generateCopilotResponse(
@@ -99,19 +135,7 @@ export async function generateCopilotResponse(
 ): Promise<{ text: string; usedGemini: boolean }> {
   const keys = getOrderedApiKeys();
   const systemInstruction = buildSystemInstruction(telemetry);
-
-  const recentHistory = history.slice(-6).map((item) => ({
-    role: item.role === 'user' ? 'user' : 'model',
-    parts: [{ text: item.text }],
-  }));
-
-  const contents = [
-    ...recentHistory,
-    {
-      role: 'user',
-      parts: [{ text: userMessage }],
-    },
-  ];
+  const contents = buildNormalizedContents(history, userMessage);
 
   for (const apiKey of keys) {
     for (const modelName of GEMINI_MODELS) {
@@ -131,8 +155,8 @@ export async function generateCopilotResponse(
               },
               contents,
               generationConfig: {
-                temperature: 0.5,
-                maxOutputTokens: 280,
+                temperature: 0.55,
+                maxOutputTokens: 260,
               },
             }),
           }
@@ -142,14 +166,17 @@ export async function generateCopilotResponse(
           const data = await response.json();
           const parts = data?.candidates?.[0]?.content?.parts;
           if (Array.isArray(parts)) {
-            const textPart = parts.find((p: { text?: string }) => typeof p?.text === 'string' && p.text.trim().length > 0);
+            const textPart = parts.find(
+              (p: { text?: string }) =>
+                typeof p?.text === 'string' && p.text.trim().length > 0
+            );
             if (textPart?.text) {
               return { text: textPart.text.trim(), usedGemini: true };
             }
           }
         }
       } catch (error) {
-        // Continúa probando con la siguiente clave/modelo
+        // Fallback al siguiente modelo o motor conversacional local
       }
     }
   }
@@ -164,34 +191,151 @@ function getContextualFallbackResponse(
   userMessage: string,
   telemetry: TelemetrySnapshot
 ): string {
-  const q = userMessage.toLowerCase();
+  const q = userMessage
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 
-  if (q.includes('lento') || q.includes('velocidad') || q.includes('corta') || q.includes('interferencia')) {
-    if (telemetry.scenarioId === 'A' && telemetry.wifi5SaturationPct > 50) {
-      return 'Hola Axel, revisé tu router y el internet llega muy bien a tu casa, pero el Wi-Fi de tus vecinos está causando interferencia con el tuyo. Si tocas el botón de abajo, cambio tu Wi-Fi a un canal libre en un segundo sin desconectarte.';
+  const wifiFixed =
+    telemetry.scenarioId === 'A' && telemetry.wifi5SaturationPct <= 40;
+  const cableFixed =
+    telemetry.scenarioId === 'B' &&
+    telemetry.rxPowerDbm !== null &&
+    telemetry.rxPowerDbm >= -24.5;
+  const isHealthy = telemetry.healthScore >= 85;
+
+  // 1. Preguntas sobre "¿Cómo lo hiciste?", "¿Qué hiciste?", "¿Qué cambiaste?", "¿Por qué fallaba?"
+  if (
+    q.includes('como lo hiciste') ||
+    q.includes('que hiciste') ||
+    q.includes('que cambiaste') ||
+    q.includes('como se arreglo') ||
+    q.includes('como funciona') ||
+    q.includes('explicame') ||
+    q.includes('por que pasaba')
+  ) {
+    if (wifiFixed || telemetry.scenarioId === 'A') {
+      return '¡Fue muy sencillo! Detecté que varios routers de tus vecinos estaban usando el mismo camino de señal que el tuyo, como si fuera una avenida con tráfico. Automáticamente pasé tu Wi-Fi a una vía totalmente despejada para que tus equipos naveguen a máxima velocidad sin tener que apagar tu router.';
     }
-    if (telemetry.scenarioId === 'B' && telemetry.rxPowerDbm !== null && telemetry.rxPowerDbm < -25) {
-      return 'Axel, noto que la señal llega débil a tu router porque el cable amarillo que va conectado atrás parece estar un poco flojo o doblado. Revisa la guía en pantalla para ajustarlo fácilmente.';
+    if (cableFixed || telemetry.scenarioId === 'B') {
+      return 'Por dentro del cable amarillo viaja una señal de luz muy rápida. Cuando el cable estaba un poco doblado o flojo, esa luz no pasaba bien; apenas lo acomodaste en la entrada verde, la señal recuperó toda su fuerza al instante.';
     }
     if (telemetry.scenarioId === 'C') {
-      return 'Axel, no necesitas tocar tu router. Detectamos un problema en el cableado de tu calle en San Isidro y ya programamos la visita de un técnico con tu código de atención CLARO-AV-2026-9814.';
+      return 'Mi sistema revisó primero tu router desde aquí y confirmó que tu equipo en casa está sano. Al ver que varios hogares de tu misma cuadra perdieron señal al mismo tiempo, identifiqué que el problema está en el poste de la calle y envié a los técnicos automáticamente.';
     }
-    return 'Tu internet está funcionando de maravilla, Axel. Todos tus equipos en casa reciben la máxima velocidad de tu plan sin interrupciones.';
+    return 'Estoy conectado directamente a tu router Claro para vigilar que la señal de la calle y tu Wi-Fi funcionen siempre por el camino más rápido, sin que tengas que reiniciar equipos ni llamar por teléfono.';
   }
 
-  if (q.includes('reiniciar') || q.includes('apagar') || q.includes('modem') || q.includes('módem')) {
-    return 'No hace falta que apagues ni reinicies tu router, Axel. Yo reviso tu conexión directamente desde aquí para solucionarlo sin hacerte perder tiempo.';
+  // 2. Saludos ("Hola", "Buenas", "Qué tal", "Buenos días")
+  if (
+    q === 'hola' ||
+    q.startsWith('hola ') ||
+    q.includes('buenos dias') ||
+    q.includes('buenas tardes') ||
+    q.includes('buenas noches') ||
+    q === 'que tal'
+  ) {
+    if (wifiFixed) {
+      return '¡Hola de nuevo, Axel! 👋 Después del ajuste que hicimos en tu Wi-Fi, tu conexión sigue funcionando excelente y a máxima velocidad en tus 11 dispositivos. ¿Te puedo ayudar con algo más?';
+    }
+    if (cableFixed) {
+      return '¡Hola Axel! 👋 Desde que acomodaste el cable amarillo, tu internet está súper estable y funcionando al 100%. ¿Cómo sientes la velocidad ahora?';
+    }
+    if (isHealthy) {
+      return `¡Hola Axel! 👋 Qué gusto saludarte. Tu internet en casa está funcionando excelente hoy y tus ${telemetry.connectedDevices} dispositivos navegan a máxima velocidad. ¿En qué te puedo ayudar?`;
+    }
+    if (telemetry.scenarioId === 'A') {
+      return '¡Hola Axel! 👋 Justo estaba revisando tu conexión: el internet llega bien desde la calle, pero hay interferencia en tu Wi-Fi por las redes de tus vecinos. Toca el botón de arriba y lo arreglo en un segundo.';
+    }
+    if (telemetry.scenarioId === 'B') {
+      return '¡Hola Axel! 👋 Noté que la señal que entra por el cable amarillo detrás de tu router está un poquito débil. Revisa que no esté doblado y empújalo suavemente en la entrada verde.';
+    }
+    return '¡Hola Axel! 👋 Te comento que hay una avería externa en tu cuadra de San Isidro, pero ya registramos tu atención (CLARO-AV-2026-9814) y nuestro equipo técnico lo solucionará hoy entre 4:30 p.m. y 6:00 p.m.';
   }
 
-  switch (telemetry.scenarioId) {
-    case 'A':
-      return 'Tu conexión de fibra está bien, pero hay congestión en el Wi-Fi por las redes de tus vecinos. Autorízame con el botón en pantalla para pasarte a una señal libre al instante.';
-    case 'B':
-      return 'Detecto que el cable amarillo detrás de tu router está un poquito flojo o doblado. Asegúrate de que esté recto y bien enchufado en la entrada verde, y luego avísame con el botón.';
-    case 'C':
-      return 'Hay una avería externa en tu zona y nuestro equipo técnico ya está en camino para repararla en la calle. Aquí tienes tu constancia oficial CLARO-AV-2026-9814 para que no tengas que llamar.';
-    case 'D':
-    default:
-      return '¡Todo está perfecto con tu internet en casa, Axel! Tu Wi-Fi funciona rápido y estable en todos tus dispositivos.';
+  // 3. Agradecimientos ("Gracias", "Genial", "Perfecto", "Excelente", "Listo")
+  if (
+    q.includes('gracias') ||
+    q.includes('genial') ||
+    q.includes('perfecto') ||
+    q.includes('excelente') ||
+    q.includes('buenisimo') ||
+    q === 'ok' ||
+    q === 'vale'
+  ) {
+    return '¡Con mucho gusto, Axel! 😊 Para eso estoy aquí: para ayudarte al instante sin que tengas que esperar en línea. Si necesitas cualquier otra cosa con tu internet de Claro, solo escríbeme.';
   }
+
+  // 4. Preguntas sobre velocidad, lentitud o videollamadas
+  if (
+    q.includes('lento') ||
+    q.includes('velocidad') ||
+    q.includes('videollamada') ||
+    q.includes('corta') ||
+    q.includes('interferencia') ||
+    q.includes('megas')
+  ) {
+    if (isHealthy) {
+      return `Ahora mismo estás recibiendo los ${telemetry.contractedMbps} Mbps completos de tu plan Claro Hogar sin ninguna interrupción. Tus videollamadas, videos y descargas van a fluir sin cortes.`;
+    }
+    if (telemetry.scenarioId === 'A') {
+      return 'Esa lentitud se debe a que el Wi-Fi de tus vecinos está chocando con el tuyo. La señal de la calle llega perfecta, así que solo toca el botón "Sí, mejorar mi Wi-Fi ahora" para pasarte a una señal libre al instante.';
+    }
+    if (telemetry.scenarioId === 'B') {
+      return 'Se está cortando porque el cable amarillo detrás de tu router parece estar un poco flojo o doblado, y eso debilita la señal. Estíralo con cuidado, asegúralo en la entrada verde y presiona el botón para verificarlo.';
+    }
+    return 'En este momento no tienes servicio porque hay un corte en el cableado exterior de tu cuadra. Nuestro equipo técnico ya fue asignado con el código CLARO-AV-2026-9814 y quedará resuelto hoy entre 4:30 p.m. y 6:00 p.m.';
+  }
+
+  // 5. Preguntas sobre reiniciar o apagar el router
+  if (
+    q.includes('reiniciar') ||
+    q.includes('apagar') ||
+    q.includes('desenchufar') ||
+    q.includes('router') ||
+    q.includes('modem')
+  ) {
+    return 'No necesitas apagar ni desenchufar tu router, Axel. Yo me encargo de revisar y ajustar tu conexión directamente desde aquí para que no pierdas tiempo.';
+  }
+
+  // 6. Preguntas sobre averías en la zona o técnicos
+  if (
+    q.includes('zona') ||
+    q.includes('calle') ||
+    q.includes('cuadra') ||
+    q.includes('san isidro') ||
+    q.includes('tecnico') ||
+    q.includes('horario') ||
+    q.includes('cuando')
+  ) {
+    if (telemetry.scenarioId === 'C') {
+      return 'Sí, detectamos una avería en el poste exterior de tu cuadra en San Isidro. Los técnicos de Claro ya están trabajando en la zona y el servicio volverá hoy entre las 4:30 p.m. y 6:00 p.m. sin que tengas que recibirlos dentro de casa.';
+    }
+    return 'En tu zona de San Isidro el cableado exterior de Claro funciona con total normalidad hoy; no hay ningún corte ni falla masiva en tu cuadra.';
+  }
+
+  // 7. Preguntas sobre equipos conectados o contraseña Wi-Fi
+  if (
+    q.includes('equipos') ||
+    q.includes('dispositivos') ||
+    q.includes('conectados') ||
+    q.includes('clave') ||
+    q.includes('contrasena')
+  ) {
+    return `En este momento tienes ${telemetry.connectedDevices} dispositivos conectados al Wi-Fi de tu casa (celulares, laptops y televisores). Todos están reconocidos y navegando de forma segura en tu red Claro.`;
+  }
+
+  // 8. Respuesta conversacional inteligente según si ya está todo bien o si hay algo pendiente
+  if (isHealthy) {
+    return `Todo marcha excelente con tu conexión en casa, Axel: estás recibiendo tus ${telemetry.contractedMbps} Mbps completos y tus ${telemetry.connectedDevices} equipos conectados tienen señal estable. ¿Tienes alguna otra duda sobre tu servicio?`;
+  }
+
+  if (telemetry.scenarioId === 'A') {
+    return 'Revisé tu conexión y la señal llega muy bien desde la calle, pero las redes Wi-Fi de tus vecinos están generando interferencia. Si tocas el botón rojo del mensaje anterior, cambio tu Wi-Fi a una señal libre en un segundo.';
+  }
+  if (telemetry.scenarioId === 'B') {
+    return 'El único detalle que detecto es que la señal entra débil por el cable amarillo detrás de tu router. Revisa que no esté doblado y que esté bien enchufado en la entrada verde, y luego toca el botón para comprobarlo.';
+  }
+  return 'Recuerda que la interrupción actual se debe a un arreglo externo en tu cuadra de San Isidro (Código CLARO-AV-2026-9814). Nuestro equipo técnico lo dejará listo hoy entre 4:30 p.m. y 6:00 p.m.';
 }

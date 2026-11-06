@@ -9,16 +9,17 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useNetworkSimulation } from '../context/NetworkSimulationContext';
 import { TelemetryBadge, TelemetryStatus } from '../components/TelemetryBadge';
 import { ChatMessage } from '../components/ChatMessage';
 
 const QUICK_PROMPTS = [
+  '¿Cómo lo hiciste?',
   'Mi internet está un poco lento',
   'Se corta mi videollamada',
   '¿Hay algún problema en mi zona?',
-  '¿Debo reiniciar mi router?',
 ];
 
 export const SupportChatScreen: React.FC = () => {
@@ -48,7 +49,6 @@ export const SupportChatScreen: React.FC = () => {
     sendUserMessage(text);
   };
 
-  // Traducción de telemetría a lenguaje sencillo para el cliente
   const fiberStatus: TelemetryStatus =
     telemetry.rxPowerDbm === null || telemetry.rxPowerDbm < -30
       ? 'critical'
@@ -127,16 +127,41 @@ export const SupportChatScreen: React.FC = () => {
         contentContainerStyle={styles.chatContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Tarjeta de Bienvenida con Diseño e Identidad Claro */}
+        <View style={styles.claroWelcomeBanner}>
+          <View style={styles.welcomeTopRow}>
+            <Image
+              source={require('../../assets/claro-logo.png')}
+              style={styles.welcomeLogo}
+              resizeMode="contain"
+            />
+            <View style={styles.planPill}>
+              <Text style={styles.planPillText}>Fibra 600 Mbps</Text>
+            </View>
+          </View>
+          <Text style={styles.welcomeTitle}>
+            Centro de Ayuda Inteligente Mi Claro
+          </Text>
+          <Text style={styles.welcomeSub}>
+            Conectado automáticamente a tu router para resolver inconvenientes sin llamadas ni esperas.
+          </Text>
+        </View>
+
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
         {isTyping && (
           <View style={styles.typingIndicatorRow}>
+            <Image
+              source={require('../../assets/claro-circle-logo.png')}
+              style={styles.typingAvatar}
+              resizeMode="contain"
+            />
             <View style={styles.typingBubble}>
               <ActivityIndicator size="small" color="#DA291C" />
               <Text style={styles.typingText}>
-                Revisando tu conexión...
+                Asistente Claro está escribiendo...
               </Text>
             </View>
           </View>
@@ -165,7 +190,7 @@ export const SupportChatScreen: React.FC = () => {
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Cuéntanos cómo va tu internet..."
+          placeholder="Escribe tu pregunta aquí..."
           placeholderTextColor="#9CA3AF"
           onSubmitEditing={handleSend}
           returnKeyType="send"
@@ -189,7 +214,7 @@ export const SupportChatScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F4F5F7',
   },
   liveTelemetryStrip: {
     backgroundColor: '#FFFFFF',
@@ -223,9 +248,67 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingBottom: 18,
   },
+  claroWelcomeBanner: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 14,
+    marginBottom: 10,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderTopWidth: 4,
+    borderTopColor: '#DA291C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  welcomeTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  welcomeLogo: {
+    width: 74,
+    height: 26,
+  },
+  planPill: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  planPillText: {
+    color: '#DA291C',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  welcomeTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  welcomeSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 17,
+  },
   typingIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
-    marginTop: 4,
+    marginTop: 6,
+  },
+  typingAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 8,
   },
   typingBubble: {
     flexDirection: 'row',
@@ -253,7 +336,7 @@ const styles = StyleSheet.create({
   quickPromptChip: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#FECACA',
     borderRadius: 999,
     paddingHorizontal: 13,
     paddingVertical: 7,
@@ -261,8 +344,8 @@ const styles = StyleSheet.create({
   },
   quickPromptText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#DA291C',
   },
   inputContainer: {
     flexDirection: 'row',
